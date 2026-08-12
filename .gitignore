@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.env.*
+
+# Build / dist
+dist/
+build/
+
+# Runtime state (Phase 1, item 1.2) — local, disposable, never versioned
+.pipeline/
+
+# Per-job data (Phase 1, res/ design) — folders tracked via .gitkeep,
+# their generated contents are not
+res/inputs/*
+res/outputs/*
+res/workdir/*
+!res/inputs/.gitkeep
+!res/outputs/.gitkeep
+!res/workdir/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
