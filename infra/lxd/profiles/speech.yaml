@@ -1,0 +1,39 @@
+# ==============================================================================
+# LXD profile: pipeline-speech
+# Runs: Audio Preprocessing, Transcript Alignment
+# Why grouped: both need the heavy speech-model environment (Whisper STT).
+# No GPU passthrough — confirmed CPU-only machine (Intel UHD integrated
+# graphics, no NVIDIA GPU). Gets the largest resource ceiling of the three
+# since Whisper CPU inference is the most memory-hungry stage.
+#
+# Applied via: bootstrap/02_create_containers.sh (which substitutes the
+# {{WORKDIR_PATH}} placeholder with the real host path before running
+# `lxc profile edit`). Do not apply this file directly.
+# ==============================================================================
+
+description: media-pipeline — speech container (audio preprocessing, transcript alignment)
+
+config:
+  limits.cpu: "3"
+  limits.memory: 4GB
+  boot.autostart: "true"
+
+devices:
+  root:
+    path: /
+    pool: default
+    type: disk
+    size: 8GB
+
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: lxdbr0
+    type: nic
+
+  workdir:
+    path: /workdir
+    source: "{{WORKDIR_PATH}}"
+    type: disk
+
+  # No /resources mount — this container never touches visual assets.

@@ -1,0 +1,44 @@
+# ==============================================================================
+# LXD profile: pipeline-render
+# Runs: HTML Build, Video Compose
+# Why grouped: needs a hardware-accelerated ffmpeg build, different from the
+# lightweight ffprobe use in pipeline-structure. Needs read-only access to
+# the Resource Library to pull in approved icon/component assets the plan
+# references during composition.
+#
+# Applied via: bootstrap/02_create_containers.sh (which substitutes the
+# {{WORKDIR_PATH}} / {{RESOURCES_PATH}} placeholders with real host paths
+# before running `lxc profile edit`). Do not apply this file directly.
+# ==============================================================================
+
+description: media-pipeline — render container (HTML build, video compose)
+
+config:
+  limits.cpu: "2"
+  limits.memory: 2GB
+  boot.autostart: "true"
+
+devices:
+  root:
+    path: /
+    pool: default
+    type: disk
+    size: 8GB
+
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: lxdbr0
+    type: nic
+
+  workdir:
+    path: /workdir
+    source: "{{WORKDIR_PATH}}"
+    type: disk
+
+  resources:
+    path: /resources
+    source: "{{RESOURCES_PATH}}"
+    type: disk
+    readonly: "true"
+    # read-only — this container consumes existing assets, never adds new ones
