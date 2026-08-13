@@ -30,3 +30,4 @@ res/workdir/*
 # OS
 .DS_Store
 Thumbs.db
+.coverage
