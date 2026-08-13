@@ -2,7 +2,7 @@
 name = "media-pipeline"
 version = "0.1.0"
 description = "Local-first media automation pipeline (PPTX/MP4 -> aligned, synced video)"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12,<3.14"
 
 dependencies = [
     "ffmpeg-python>=0.2",
