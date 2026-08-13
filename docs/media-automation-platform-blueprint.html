@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Automation Platform — 5-Day Execution Blueprint</title>
+<style>
+  :root{
+    --ink:#2B2E33;
+    --sub:#6B7280;
+    --bg:#FAFAF9;
+    --card:#FFFFFF;
+    --line:#E7E5E2;
+
+    /* Phase palette — soft, low-saturation */
+    --p1:#EAF2FB; --p1-line:#B9D2EE; --p1-text:#3E5C82;
+    --p2:#EAF7EF; --p2-line:#B7E0C4; --p2-text:#3C7A57;
+    --p3:#F1EEFA; --p3-line:#CFC2EC; --p3-text:#6A519B;
+    --p4:#FDF3E7; --p4-line:#EFD3A6; --p4-text:#9A6B23;
+    --p5:#FCEEF2; --p5-line:#EEC1D2; --p5-text:#A34B6B;
+    --p6:#E8F6F6; --p6-line:#B7E1E1; --p6-text:#347777;
+
+    /* Status colors */
+    --s-not:#EEF0F2; --s-not-text:#697280; --s-not-dot:#9AA3AF;
+    --s-prog:#FEF3D6; --s-prog-text:#8A6414; --s-prog-dot:#E3A82B;
+    --s-block:#FBE7E7; --s-block-text:#A33D3D; --s-block-dot:#D46464;
+    --s-done:#E3F3E6; --s-done-text:#2F7A44; --s-done-dot:#4CAA63;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding:32px 24px 64px;
+  }
+
+  .wrap{max-width:1500px;margin:0 auto;}
+
+  header{margin-bottom:22px;}
+  header h1{
+    font-size:1.55rem;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--sub);
+    font-size:0.92rem;
+  }
+
+  /* Progress summary bar */
+  .summary{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:18px 0 22px;
+  }
+  .chip{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:9px 14px;
+    font-size:0.82rem;
+    color:var(--sub);
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .chip b{color:var(--ink); font-size:0.95rem;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+
+  .legend{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+    font-size:0.8rem;
+    color:var(--sub);
+  }
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .legend .sw{width:14px;height:14px;border-radius:4px;display:inline-block;}
+
+  .table-scroll{
+    overflow-x:auto;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:var(--card);
+  }
+
+  table{
+    border-collapse:collapse;
+    width:100%;
+    min-width:1280px;
+    font-size:0.86rem;
+  }
+
+  thead th{
+    position:sticky;
+    top:0;
+    background:#F3F2EF;
+    color:var(--ink);
+    text-align:left;
+    font-weight:600;
+    font-size:0.76rem;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+    z-index:2;
+  }
+
+  tbody td{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+    line-height:1.42;
+  }
+
+  tbody tr:last-child td{border-bottom:none;}
+
+  .col-step{white-space:nowrap; font-weight:700;}
+  .col-day{white-space:nowrap; font-weight:600;}
+
+  /* Phase row tint via left border + subtle bg */
+  tr.phase-1{background:var(--p1);} tr.phase-1 td.col-step{color:var(--p1-text);}
+  tr.phase-2{background:var(--p2);} tr.phase-2 td.col-step{color:var(--p2-text);}
+  tr.phase-3{background:var(--p3);} tr.phase-3 td.col-step{color:var(--p3-text);}
+  tr.phase-4{background:var(--p4);} tr.phase-4 td.col-step{color:var(--p4-text);}
+  tr.phase-5{background:var(--p5);} tr.phase-5 td.col-step{color:var(--p5-text);}
+  tr.phase-6{background:var(--p6);} tr.phase-6 td.col-step{color:var(--p6-text);}
+
+  tr.phase-1{border-left:4px solid var(--p1-line);}
+  tr.phase-2{border-left:4px solid var(--p2-line);}
+  tr.phase-3{border-left:4px solid var(--p3-line);}
+  tr.phase-4{border-left:4px solid var(--p4-line);}
+  tr.phase-5{border-left:4px solid var(--p5-line);}
+  tr.phase-6{border-left:4px solid var(--p6-line);}
+
+  /* Phase divider header rows */
+  tr.phase-header td{
+    padding:9px 14px;
+    font-weight:700;
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    border-bottom:1px solid var(--line);
+  }
+  tr.phase-header.ph-1{background:var(--p1-line); color:var(--p1-text);}
+  tr.phase-header.ph-2{background:var(--p2-line); color:var(--p2-text);}
+  tr.phase-header.ph-3{background:var(--p3-line); color:var(--p3-text);}
+  tr.phase-header.ph-4{background:var(--p4-line); color:var(--p4-text);}
+  tr.phase-header.ph-5{background:var(--p5-line); color:var(--p5-text);}
+  tr.phase-header.ph-6{background:var(--p6-line); color:var(--p6-text);}
+
+  select.status-select{
+    appearance:none;
+    -webkit-appearance:none;
+    border:none;
+    border-radius:20px;
+    padding:6px 26px 6px 12px;
+    font-size:0.78rem;
+    font-weight:600;
+    cursor:pointer;
+    background-repeat:no-repeat;
+    background-position:right 8px center;
+    background-size:10px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0' fill='%23888'/></svg>");
+    min-width:118px;
+  }
+  select.status-select:focus{outline:2px solid #9AA3AF; outline-offset:2px;}
+
+  .st-not{background:var(--s-not); color:var(--s-not-text);}
+  .st-prog{background:var(--s-prog); color:var(--s-prog-text);}
+  .st-block{background:var(--s-block); color:var(--s-block-text);}
+  .st-done{background:var(--s-done); color:var(--s-done-text);}
+
+  .note{
+    margin-top:16px;
+    font-size:0.8rem;
+    color:var(--sub);
+  }
+
+  .save-msg{
+    font-size:0.76rem;
+    color:#4CAA63;
+    margin-left:6px;
+    opacity:0;
+    transition:opacity 0.3s;
+  }
+  .save-msg.show{opacity:1;}
+
+  @media (max-width:640px){
+    body{padding:18px 12px 48px;}
+    header h1{font-size:1.25rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Media Automation Platform — 5-Day Execution Blueprint</h1>
+    <p>Local-first build · Slides/video → aligned, narrated, rendered video · Status persists automatically as you update it.</p>
+  </header>
+
+  <div class="summary" id="summaryBar"></div>
+
+  <div class="legend">
+    <span><i class="sw" style="background:var(--p1)"></i>Phase 1 — Foundations</span>
+    <span><i class="sw" style="background:var(--p2)"></i>Phase 2 — Visual Deconstruction</span>
+    <span><i class="sw" style="background:var(--p3)"></i>Phase 3 — Audio/Transcript Sync</span>
+    <span><i class="sw" style="background:var(--p4)"></i>Phase 4 — Sequence Mapping</span>
+    <span><i class="sw" style="background:var(--p5)"></i>Phase 5 — Rendering</span>
+    <span><i class="sw" style="background:var(--p6)"></i>Phase 6 — Review Gates</span>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Day / Slot</th>
+          <th style="min-width:220px;">Operational & Engineering Task</th>
+          <th style="min-width:200px;">Tech Finalization & Decision Criteria</th>
+          <th style="min-width:200px;">Key Risks & Trade-offs</th>
+          <th style="min-width:180px;">Deliverables & Artifacts</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <p class="note">Timeline is compressed for a 5-day local build (two half-day slots per day). Phase 6 items 6.3–6.4 are stretch/deferred — they assume moving beyond a single machine and are not required for local completion.</p>
+
+</div>
+
+<script>
+const DATA = [
+  {phase:1, step:"1.1", day:"Day 1 · AM", task:"Finalize core language/runtime for pipeline orchestration and workers", tech:"Async I/O support, ecosystem maturity for media/ML libs, local process management", risk:"Language fragmentation across stages vs. single-language simplicity", deliv:"Language/runtime decision record (ADR)"},
+  {phase:1, step:"1.2", day:"Day 1 · AM", task:"Finalize local state store for job/pipeline metadata", tech:"Embedded/file-based vs. lightweight local DB for concurrency & durability", risk:"Full DB server is overkill locally; flat files may not handle concurrent jobs", deliv:"State store decision record; local schema draft"},
+  {phase:1, step:"1.3", day:"Day 1 · AM", task:"Define project structure and core architecture (stage boundaries, data contracts)", tech:"Modular monolith vs. in-process services; interface contracts between stages", risk:"Tight coupling blocks later scaling; too much abstraction slows early velocity", deliv:"Architecture diagram; repo scaffold; module boundary spec"},
+  {phase:1, step:"1.4", day:"Day 1 · PM", task:"Design job resumability & checkpointing (resume from last completed stage)", tech:"Checkpoint granularity, persistence location, partial-output validation on resume", risk:"Coarse checkpoints waste rework; fine-grained checkpoints add overhead", deliv:"Checkpointing design doc; resumable job state schema"},
+  {phase:1, step:"1.5", day:"Day 1 · PM", task:"Establish lightweight schema versioning convention across pipeline JSON artifacts", tech:"`version` field placement, semver rules, backward-compatibility policy", risk:"Skipping this makes any future schema change a breaking migration", deliv:"Versioning convention doc; base schema template"},
+  {phase:1, step:"1.6", day:"Day 1 · PM", task:"Define quality thresholds before building test automation", tech:"Set numeric targets: max sync drift (ms), min render fps, acceptable STT error rate", risk:"Vague thresholds make tests meaningless; overly strict ones block early progress", deliv:"Quality threshold spec (living document)"},
+  {phase:1, step:"1.7", day:"Day 1 · PM", task:"Set up automated testing & CI pipeline (unit, integration, golden-file regression)", tech:"Test runner, fixture/sample-asset strategy, golden-file comparison automation", risk:"Media-output regression tests are harder to automate than pure code tests", deliv:"CI config; test suite scaffold; sample fixture set"},
+
+  {phase:2, step:"2.1", day:"Day 2 · AM", task:"Finalize PPTX parsing engine and MP4/video parsing engine", tech:"Fidelity of shape/layout/animation extraction; local dependency footprint", risk:"High-fidelity parsers may be slow/heavy; lightweight ones may lose metadata", deliv:"Parser decision record; sample extraction outputs"},
+  {phase:2, step:"2.2", day:"Day 2 · AM", task:"Finalize approach for visual tree extraction (DOM-like structure)", tech:"Tree depth/granularity needed for downstream animation mapping", risk:"Too granular bloats manifests; too shallow loses layout detail", deliv:"Visual tree extraction module"},
+  {phase:2, step:"2.3", day:"Day 2 · AM", task:"Build input processing pipeline: ingest PPTX/MP4 → normalize into internal visual tree", tech:"Normalization rules for mixed input types into one consistent internal model", risk:"Divergent representations per input type increase downstream branching", deliv:"Input processing service; normalized visual tree output"},
+  {phase:2, step:"2.4", day:"Day 2 · PM", task:"Design asset isolation logic (images, text blocks, embedded media)", tech:"Local storage layout, naming/ID convention, de-duplication strategy", risk:"Weak asset ID strategy causes broken references on re-processing", deliv:"Asset extraction module; local asset store structure"},
+  {phase:2, step:"2.5", day:"Day 2 · PM", task:"Design and generate `manifest.json` schema (structure + asset metadata)", tech:"Schema fields for position, hierarchy, asset refs, per-element metadata", risk:"Too rigid breaks on edge-case layouts; too loose pushes ambiguity downstream", deliv:"`manifest.json` schema; sample manifest outputs"},
+
+  {phase:3, step:"3.1", day:"Day 2 · PM", task:"Finalize local STT (speech-to-text) engine", tech:"Offline capability, word-level timestamp support, accuracy vs. compute footprint", risk:"High-accuracy models may be too heavy locally; light models risk timestamp precision", deliv:"STT engine decision record; sample transcription outputs"},
+  {phase:3, step:"3.2", day:"Day 3 · AM", task:"Finalize forced-alignment tool/approach for word-level sync refinement", tech:"Alignment accuracy vs. defined drift threshold (1.6); integration complexity", risk:"Adds a processing stage/failure point; skipping risks unacceptable drift", deliv:"Alignment tool decision record"},
+  {phase:3, step:"3.3", day:"Day 3 · AM", task:"Build audio extraction & STT integration pipeline", tech:"Audio extraction format/sample rate, handling silent/noisy segments", risk:"Poor extraction quality directly degrades STT accuracy downstream", deliv:"Audio extraction module; raw transcript output"},
+  {phase:3, step:"3.4", day:"Day 3 · AM", task:"Implement word-level timestamp alignment against drift threshold", tech:"Validate against Phase 1.6 threshold using test fixtures", risk:"Cumulative drift on long-form narration; failures on overlapping/non-speech audio", deliv:"Alignment module; validated timestamp output"},
+  {phase:3, step:"3.5", day:"Day 3 · PM", task:"Design and generate `transcript.json` schema (word text + timestamps + confidence)", tech:"Schema fields for word boundaries, confidence scores, speaker segments", risk:"Missing confidence metadata makes later manual corrections harder to target", deliv:"`transcript.json` schema; sample transcript outputs"},
+
+  {phase:4, step:"4.1", day:"Day 3 · PM", task:"Finalize timeline/state management approach for animation & transition sequencing", tech:"State machine vs. declarative timeline model for transitions", risk:"State machines get unwieldy with branching; declarative models may lack expressiveness", deliv:"Timeline state management decision record"},
+  {phase:4, step:"4.2", day:"Day 4 · AM", task:"Finalize config/orchestration approach mapping manifest + transcript into a plan", tech:"Rule-based mapping vs. configurable heuristics for element-to-narration alignment", risk:"Rigid rules fail on atypical pairings; too configurable slows initial dev", deliv:"Mapping engine decision record"},
+  {phase:4, step:"4.3", day:"Day 4 · AM", task:"Build timeline mapping logic (sync visual elements to transcript timestamps)", tech:"Validate mapped output against sync drift threshold (1.6)", risk:"Visual-narration misalignment is the most user-visible failure mode", deliv:"Timeline mapping module"},
+  {phase:4, step:"4.4", day:"Day 4 · AM", task:"Design configuration architecture & generate `plan.json` schema", tech:"Schema fields for timing, transition type, element refs, render instructions", risk:"Must stay version-synced with manifest/transcript schemas (ties to 1.5)", deliv:"`plan.json` schema; sample execution plan outputs"},
+
+  {phase:5, step:"5.1", day:"Day 4 · PM", task:"Finalize media rendering framework", tech:"Local rendering performance, animation/transition support, output flexibility", risk:"Constrains achievable animation quality/speed; costly to switch later", deliv:"Rendering framework decision record"},
+  {phase:5, step:"5.2", day:"Day 4 · PM", task:"Finalize layer compositing engine approach", tech:"Handling overlapping/animated layers; compatibility with render framework", risk:"Compositing performance degrades with layer count/complexity", deliv:"Compositing engine decision record"},
+  {phase:5, step:"5.3", day:"Day 4 · PM", task:"Finalize local hardware acceleration strategy (if available)", tech:"GPU/codec acceleration availability on local hardware vs. CPU fallback", risk:"Hardware-accelerated paths add platform-specific complexity/portability issues", deliv:"Hardware acceleration strategy doc"},
+  {phase:5, step:"5.4", day:"Day 5 · AM", task:"Build frame interpolation & layer compositing pipeline from `plan.json`", tech:"Validate output against render throughput threshold (1.6)", risk:"Interpolation artifacts (stutter, ghosting) are hard to catch without visual regression tests", deliv:"Rendering/compositing module"},
+  {phase:5, step:"5.5", day:"Day 5 · AM", task:"Build audio-video muxing & final output generation", tech:"Target output format(s); sync verification at mux time", risk:"Muxing errors can silently desync audio/video even after correct upstream alignment", deliv:"Muxing module; final rendered video output"},
+
+  {phase:6, step:"6.1", day:"Day 5 · PM", task:"Finalize local review-gate storage approach for manifest/transcript/plan edits", tech:"Local versioned file storage vs. embedded DB for edit history/overrides", risk:"Insufficient edit history makes bad manual corrections hard to revert", deliv:"Review-gate storage decision record"},
+  {phase:6, step:"6.2", day:"Day 5 · PM", task:"Build review-gate APIs & override workflows (manifest/transcript/plan editing)", tech:"Human-editable fields per artifact; validation rules against schema-breaking edits", risk:"Unvalidated manual edits can break downstream schema contracts (ties to 1.5)", deliv:"Review-gate API; override workflow module"},
+  {phase:6, step:"6.3", day:"Stretch / Deferred", task:"Evaluate task queuing & worker orchestration for beyond-local-machine use", tech:"Local single-process queue vs. future distributed queue (current scope: single machine)", risk:"Building distributed infra now adds unneeded complexity; deferring too long risks a rewrite", deliv:"Forward-looking scaling design note (non-blocking)"},
+  {phase:6, step:"6.4", day:"Stretch / Deferred", task:"Evaluate cloud storage delivery approach for beyond-local output delivery", tech:"Candidate approaches noted for future migration; no implementation at this stage", risk:"Premature cloud integration adds cost/complexity with no current benefit", deliv:"Forward-looking storage design note (non-blocking)"},
+];
+
+const STATUS_OPTIONS = [
+  {value:"not", label:"Not Started", cls:"st-not"},
+  {value:"prog", label:"In Progress", cls:"st-prog"},
+  {value:"block", label:"Blocked", cls:"st-block"},
+  {value:"done", label:"Done", cls:"st-done"},
+];
+
+const PHASE_NAMES = {
+  1:"Phase 1 — Pipeline Foundations & Project Setup",
+  2:"Phase 2 — Visual Deconstruction Engine",
+  3:"Phase 3 — Audio/Transcript Synchronization & Alignment",
+  4:"Phase 4 — Sequence Mapping, Asset Library & Execution Strategy",
+  5:"Phase 5 — Rendering & Composition Engine",
+  6:"Phase 6 — Human-in-the-Loop Review Gates & Production Scaling",
+};
+
+let statusState = {};
+
+async function loadStatus(){
+  for(const row of DATA){
+    try{
+      const res = await window.storage.get('status:' + row.step, false);
+      statusState[row.step] = res ? res.value : 'not';
+    }catch(e){
+      statusState[row.step] = 'not';
+    }
+  }
+}
+
+async function saveStatus(step, value){
+  statusState[step] = value;
+  try{
+    await window.storage.set('status:' + step, value, false);
+  }catch(e){
+    console.error('Storage save failed', e);
+  }
+  renderSummary();
+}
+
+function renderSummary(){
+  const counts = {not:0, prog:0, block:0, done:0};
+  DATA.forEach(r => counts[statusState[r.step] || 'not']++);
+  const total = DATA.length;
+  const bar = document.getElementById('summaryBar');
+  bar.innerHTML = `
+    <div class="chip"><span class="dot" style="background:var(--s-done-dot)"></span>Done <b>${counts.done}/${total}</b></div>
+    <div class="chip"><span class="dot" style="background:var(--s-prog-dot)"></span>In Progress <b>${counts.prog}</b></div>
+    <div class="chip"><span class="dot" style="background:var(--s-block-dot)"></span>Blocked <b>${counts.block}</b></div>
+    <div class="chip"><span class="dot" style="background:var(--s-not-dot)"></span>Not Started <b>${counts.not}</b></div>
+  `;
+}
+
+function renderTable(){
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  let lastPhase = null;
+
+  DATA.forEach(row => {
+    if(row.phase !== lastPhase){
+      const headerTr = document.createElement('tr');
+      headerTr.className = `phase-header ph-${row.phase}`;
+      headerTr.innerHTML = `<td colspan="7">${PHASE_NAMES[row.phase]}</td>`;
+      tbody.appendChild(headerTr);
+      lastPhase = row.phase;
+    }
+
+    const tr = document.createElement('tr');
+    tr.className = `phase-${row.phase}`;
+
+    const currentStatus = statusState[row.step] || 'not';
+    const statusCls = STATUS_OPTIONS.find(s => s.value === currentStatus).cls;
+
+    tr.innerHTML = `
+      <td class="col-step">${row.step}</td>
+      <td class="col-day">${row.day}</td>
+      <td>${row.task}</td>
+      <td>${row.tech}</td>
+      <td>${row.risk}</td>
+      <td>${row.deliv}</td>
+      <td>
+        <select class="status-select ${statusCls}" data-step="${row.step}">
+          ${STATUS_OPTIONS.map(s => `<option value="${s.value}" ${s.value===currentStatus?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('.status-select').forEach(sel => {
+    sel.addEventListener('change', async (e) => {
+      const step = e.target.dataset.step;
+      const value = e.target.value;
+      const newCls = STATUS_OPTIONS.find(s => s.value === value).cls;
+      e.target.className = `status-select ${newCls}`;
+      await saveStatus(step, value);
+    });
+  });
+}
+
+async function init(){
+  await loadStatus();
+  renderTable();
+  renderSummary();
+}
+
+init();
+</script>
+</body>
+</html>

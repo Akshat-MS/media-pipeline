@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 1 — Pipeline Foundations & Project Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/nord.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<style>
+  :root{
+    --bg:            #0B0E14;
+    --panel:         #12161F;
+    --panel-2:       #161B26;
+    --border:        #232838;
+    --border-soft:   #1A1F2C;
+    --text:          #E6EDF3;
+    --text-dim:      #9BA5B4;
+    --text-faint:    #6B7383;
+    --accent:        #5FD4C7;
+    --accent-soft:   rgba(95,212,199,0.12);
+    --amber:         #E8A33D;
+    --amber-soft:    rgba(232,163,61,0.12);
+    --green:         #4ADE80;
+    --red:           #F26B6B;
+    --code-bg:       #0D1117;
+    --radius:        10px;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', -apple-system, sans-serif;
+    font-size:15.5px;
+    line-height:1.65;
+  }
+  ::selection{ background:var(--accent-soft); color:var(--accent); }
+
+  /* ---------- Layout ---------- */
+  .shell{ display:flex; max-width:1400px; margin:0 auto; }
+  .sidebar{
+    position:sticky; top:0; height:100vh; width:280px; flex-shrink:0;
+    overflow-y:auto; padding:32px 20px 40px 28px;
+    border-right:1px solid var(--border-soft);
+  }
+  .sidebar::-webkit-scrollbar{ width:6px; }
+  .sidebar::-webkit-scrollbar-thumb{ background:var(--border); border-radius:3px; }
+  .brand{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:0.08em; color:var(--accent); text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .brand-sub{ font-size:12px; color:var(--text-faint); margin-bottom:28px; line-height:1.5; }
+  .toc-group{ margin-bottom:6px; }
+  .toc-label{
+    font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--text-faint); margin:20px 0 8px 0; font-weight:600;
+  }
+  .toc-link{
+    display:flex; align-items:baseline; gap:8px;
+    padding:6px 10px; margin:1px 0; border-radius:7px;
+    color:var(--text-dim); text-decoration:none; font-size:13.5px;
+    transition:background .12s, color .12s;
+  }
+  .toc-link:hover{ background:var(--panel-2); color:var(--text); }
+  .toc-link .num{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--accent); flex-shrink:0; }
+  .status-pill{
+    display:inline-block; font-size:10px; font-family:'JetBrains Mono',monospace;
+    padding:2px 7px; border-radius:20px; background:var(--accent-soft); color:var(--accent);
+    letter-spacing:0.03em; margin-top:24px;
+  }
+
+  .main{ flex:1; min-width:0; padding:48px 56px 120px; max-width:960px; }
+
+  /* ---------- Header ---------- */
+  .doc-header{ margin-bottom:56px; padding-bottom:32px; border-bottom:1px solid var(--border-soft); }
+  h1{
+    font-family:'Space Grotesk', sans-serif; font-size:34px; font-weight:700;
+    margin:0 0 10px; letter-spacing:-0.01em; line-height:1.2;
+  }
+  .subtitle{ font-size:16px; color:var(--text-dim); margin-bottom:18px; }
+  .meta-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .meta-chip{
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-dim);
+    background:var(--panel); border:1px solid var(--border); padding:5px 10px; border-radius:20px;
+  }
+
+  /* ---------- Sections ---------- */
+  section.item{ margin-bottom:64px; scroll-margin-top:24px; }
+  .item-eyebrow{
+    display:flex; align-items:center; gap:12px; margin-bottom:6px;
+  }
+  .item-num{
+    font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--accent);
+    background:var(--accent-soft); padding:3px 10px; border-radius:6px; font-weight:600;
+  }
+  .item-status{
+    font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 9px; border-radius:6px;
+    border:1px solid var(--border);
+  }
+  .item-status.final{ color:var(--green); border-color:rgba(74,222,128,0.3); background:rgba(74,222,128,0.07); }
+  .item-status.revised{ color:var(--amber); border-color:rgba(232,163,61,0.3); background:var(--amber-soft); }
+  h2.item-title{
+    font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:600;
+    margin:8px 0 4px; letter-spacing:-0.01em;
+  }
+  .item-note{ font-size:13.5px; color:var(--text-faint); margin-bottom:24px; font-style:italic; }
+
+  h3{
+    font-family:'Space Grotesk', sans-serif; font-size:15px; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim);
+    margin:32px 0 14px; display:flex; align-items:center; gap:10px;
+  }
+  h3::after{ content:''; flex:1; height:1px; background:var(--border-soft); }
+
+  p{ color:#D2DAE5; margin:0 0 14px; }
+  strong{ color:var(--text); font-weight:600; }
+  code:not(pre code){
+    font-family:'JetBrains Mono',monospace; font-size:0.87em;
+    background:var(--panel-2); color:var(--accent); padding:1.5px 6px; border-radius:5px;
+    border:1px solid var(--border-soft);
+  }
+  ul, ol{ margin:0 0 16px; padding-left:22px; color:#D2DAE5; }
+  li{ margin-bottom:8px; }
+  li::marker{ color:var(--accent); }
+
+  blockquote{
+    margin:0 0 20px; padding:14px 18px; background:var(--amber-soft);
+    border-left:3px solid var(--amber); border-radius:0 8px 8px 0;
+    color:#E3D2B0; font-size:14px;
+  }
+  blockquote p{ margin:0; color:inherit; }
+
+  /* ---------- Tables ---------- */
+  .table-wrap{ overflow-x:auto; margin-bottom:22px; border:1px solid var(--border); border-radius:var(--radius); }
+  table{ width:100%; border-collapse:collapse; font-size:13.8px; }
+  thead th{
+    text-align:left; background:var(--panel-2); color:var(--text-dim);
+    font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em;
+    padding:11px 16px; border-bottom:1px solid var(--border);
+    position:sticky; top:0;
+  }
+  tbody td{
+    padding:12px 16px; border-bottom:1px solid var(--border-soft); color:#D2DAE5;
+    vertical-align:top;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:rgba(255,255,255,0.015); }
+  table code{ white-space:nowrap; }
+
+  .badge{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px;
+    padding:2px 8px; border-radius:5px; font-weight:600;
+  }
+  .badge.ok{ background:rgba(74,222,128,0.12); color:var(--green); }
+  .badge.warn{ background:var(--amber-soft); color:var(--amber); }
+  .badge.pending{ background:rgba(155,165,180,0.1); color:var(--text-faint); }
+
+  /* ---------- Code blocks ---------- */
+  .code-block{
+    position:relative; margin:0 0 22px; border-radius:var(--radius);
+    border:1px solid var(--border); overflow:hidden; background:var(--code-bg);
+  }
+  .code-block-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 14px; background:var(--panel-2); border-bottom:1px solid var(--border);
+  }
+  .code-block-label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint);
+    letter-spacing:0.05em; text-transform:uppercase; display:flex; align-items:center; gap:8px;
+  }
+  .code-block-label .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .copy-btn{
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-dim);
+    background:var(--panel); border:1px solid var(--border); padding:5px 11px;
+    border-radius:6px; cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:6px;
+  }
+  .copy-btn:hover{ background:var(--border); color:var(--text); border-color:var(--accent); }
+  .copy-btn.copied{ color:var(--green); border-color:rgba(74,222,128,0.4); background:rgba(74,222,128,0.08); }
+  .copy-btn svg{ width:12px; height:12px; }
+  pre{ margin:0; padding:18px 20px; overflow-x:auto; }
+  pre code.hljs{
+    font-family:'JetBrains Mono',monospace !important; font-size:12.8px !important;
+    line-height:1.65 !important; background:transparent !important; padding:0 !important;
+  }
+
+  /* ---------- Sequence timeline ---------- */
+  .seq-wrap{ margin-bottom:22px; }
+  .seq-row{
+    display:grid; grid-template-columns:38px 1fr; gap:16px; position:relative; padding-bottom:22px;
+  }
+  .seq-row:not(:last-child)::before{
+    content:''; position:absolute; left:18px; top:36px; bottom:0; width:1px; background:var(--border);
+  }
+  .seq-marker{
+    width:36px; height:36px; border-radius:50%; background:var(--panel);
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--accent); font-size:13px;
+    flex-shrink:0; z-index:1;
+  }
+  .seq-body{ padding-top:4px; }
+  .seq-title{ font-weight:600; color:var(--text); margin-bottom:3px; font-size:14.5px; }
+  .seq-meta{ font-size:12px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; }
+  .seq-meta b{ color:var(--text-dim); font-weight:500; }
+
+  /* ---------- Summary section ---------- */
+  .summary-note{ font-size:13px; color:var(--text-faint); margin-top:10px; padding:14px 16px; background:var(--panel); border-radius:8px; border:1px solid var(--border-soft); }
+
+  /* ---------- Figures / diagrams ---------- */
+  figure.diagram{
+    margin:0 0 24px; padding:24px 20px 16px; background:var(--panel);
+    border:1px solid var(--border); border-radius:var(--radius);
+  }
+  figure.diagram svg{ width:100%; height:auto; display:block; }
+  figcaption{
+    margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft);
+    font-size:12.5px; color:var(--text-faint); text-align:center; line-height:1.5;
+  }
+  figcaption b{ color:var(--text-dim); font-weight:600; }
+  .legend-row{
+    display:flex; flex-wrap:wrap; gap:16px; justify-content:center;
+    margin-bottom:18px; font-size:11.5px; color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .legend-item{ display:flex; align-items:center; gap:7px; }
+  .legend-swatch{ width:22px; height:0; border-top-width:2px; border-top-style:solid; }
+  .legend-box{ width:13px; height:13px; border-radius:3px; border:1px solid; }
+
+  hr.section-rule{ border:none; border-top:1px solid var(--border-soft); margin:56px 0; }
+
+  footer{ margin-top:60px; padding-top:24px; border-top:1px solid var(--border-soft); color:var(--text-faint); font-size:12.5px; }
+
+  @media(max-width:900px){
+    .sidebar{ display:none; }
+    .main{ padding:32px 20px 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ================= SIDEBAR ================= -->
+  <nav class="sidebar">
+    <div class="brand">Phase 1 · Foundations</div>
+    <div class="brand-sub">Local-First Media Automation Pipeline<br>PPTX/MP4 → Aligned, Narrated, Rendered Video</div>
+
+    <div class="toc-group">
+      <div class="toc-label">Architecture</div>
+      <a class="toc-link" href="#architecture"><span class="num">◇</span> System Architecture</a>
+      <a class="toc-link" href="#pipeline"><span class="num">◇</span> Pipeline &amp; Data Flow</a>
+    </div>
+
+    <div class="toc-group">
+      <div class="toc-label">Design Decisions</div>
+      <a class="toc-link" href="#item-1-1"><span class="num">1.1</span> Language &amp; Runtime</a>
+      <a class="toc-link" href="#item-1-2"><span class="num">1.2</span> State Store</a>
+      <a class="toc-link" href="#item-1-3"><span class="num">1.3</span> Project Structure</a>
+      <a class="toc-link" href="#item-1-4"><span class="num">1.4</span> Resumability</a>
+      <a class="toc-link" href="#item-1-5"><span class="num">1.5</span> Schema Versioning</a>
+      <a class="toc-link" href="#item-1-6"><span class="num">1.6</span> Quality Thresholds</a>
+      <a class="toc-link" href="#item-1-7"><span class="num">1.7</span> Testing &amp; CI</a>
+    </div>
+
+    <div class="toc-group">
+      <div class="toc-label">Execution</div>
+      <a class="toc-link" href="#sequence"><span class="num">→</span> Build Sequence</a>
+      <a class="toc-link" href="#summary"><span class="num">✓</span> Summary &amp; Status</a>
+    </div>
+
+    <span class="status-pill">7 / 7 DECISIONS FINAL</span>
+  </nav>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <div class="doc-header">
+      <h1>Phase 1 — Pipeline Foundations &amp; Project Setup</h1>
+      <div class="subtitle">Local-First Media Automation Pipeline (PPTX/MP4 → Aligned, Narrated, Rendered Video)</div>
+      <div class="meta-row">
+        <span class="meta-chip">ROLE: Principal Technical Architect</span>
+        <span class="meta-chip">BUILD WINDOW: Day 1 of 5</span>
+        <span class="meta-chip">OPERATOR: Solo Senior Engineer</span>
+      </div>
+    </div>
+
+    <!-- ===================== ARCHITECTURE ===================== -->
+    <section class="item" id="architecture">
+      <div class="item-eyebrow">
+        <span class="item-num">◇ 2.1</span>
+        <span class="item-status revised">↻ UPDATED</span>
+      </div>
+      <h2 class="item-title">System Architecture</h2>
+      <div class="item-note">Major building blocks and how they interact — grouped by role, not execution order.</div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 1460 840" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif">
+          <defs>
+            <marker id="ar" markerWidth="10" markerHeight="10" refX="7.5" refY="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5FD4C7"/>
+            </marker>
+            <marker id="arA" markerWidth="10" markerHeight="10" refX="7.5" refY="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#E8A33D"/>
+            </marker>
+            <marker id="arG" markerWidth="10" markerHeight="10" refX="7.5" refY="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#4ADE80"/>
+            </marker>
+            <marker id="arP" markerWidth="10" markerHeight="10" refX="7.5" refY="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#A78BFA"/>
+            </marker>
+            <marker id="arPs" markerWidth="10" markerHeight="10" refX="2.5" refY="5" orient="auto">
+              <path d="M10,0 L0,5 L10,10 z" fill="#A78BFA"/>
+            </marker>
+            <style>
+              .bl   { fill:#E6EDF3; font-size:15px; font-weight:600; }
+              .sb   { fill:#9AA6B8; font-size:11.5px; }
+              .mono { fill:#5FD4C7; font-size:11.5px; font-family:'JetBrains Mono','Courier New',monospace; }
+              .lbl  { fill:#6B7383; font-size:11px; font-weight:600; letter-spacing:0.16em; }
+              .grpL { fill:#7E899B; font-size:12px; font-weight:700; letter-spacing:0.14em; }
+              .gateT{ fill:#E8A33D; font-size:12px; font-weight:700; letter-spacing:0.03em; }
+              .note { fill:#8792A3; font-size:10.5px; font-style:italic; }
+              .fl   { stroke:#5FD4C7; stroke-width:1.8; fill:none; }
+              .flA  { stroke:#E8A33D; stroke-width:1.8; fill:none; }
+              .flG  { stroke:#4ADE80; stroke-width:2; fill:none; }
+              .flP  { stroke:#A78BFA; stroke-width:1.7; fill:none; }
+              .proc { fill:rgba(95,212,199,0.09); stroke:#5FD4C7; stroke-width:1.5; }
+              .inp  { fill:rgba(232,163,61,0.11); stroke:#E8A33D; stroke-width:1.6; stroke-dasharray:6 4; }
+              .res  { fill:rgba(167,139,250,0.10); stroke:#A78BFA; stroke-width:1.5; }
+              .cfg  { fill:rgba(135,146,163,0.10); stroke:#8792A3; stroke-width:1.5; }
+              .gate { fill:rgba(232,163,61,0.14); stroke:#E8A33D; stroke-width:1.3; }
+              .rndr { fill:rgba(232,163,61,0.10); stroke:#E8A33D; stroke-width:1.5; }
+              .grp  { fill:none; stroke:#2C3346; stroke-width:1.4; stroke-dasharray:6 5; }
+              .out  { fill:rgba(74,222,128,0.13); stroke:#4ADE80; stroke-width:1.6; }
+            </style>
+          </defs>
+        
+          <rect x="0" y="0" width="1460" height="840" fill="#0B0E14"/>
+        
+          <!-- ============ INPUT ============ -->
+          <text x="45" y="248" class="lbl">INPUT</text>
+          <rect x="40" y="256" width="150" height="120" rx="11" class="inp"/>
+          <text x="115" y="304" text-anchor="middle" class="bl" font-size="14">Input</text>
+          <text x="115" y="330" text-anchor="middle" class="sb">slide deck (PPTX)</text>
+          <text x="115" y="350" text-anchor="middle" class="sb">lecture video (MP4)</text>
+        
+          <!-- ============ PROCESSING group ============ -->
+          <rect x="230" y="70" width="1000" height="470" rx="16" class="grp"/>
+          <text x="252" y="98" class="grpL">PROCESSING</text>
+        
+          <!-- Visual Extraction -->
+          <rect x="260" y="120" width="205" height="92" rx="9" class="proc"/>
+          <text x="362" y="158" text-anchor="middle" class="bl">Visual Extraction</text>
+          <text x="362" y="186" text-anchor="middle" class="mono">→ manifest.json</text>
+        
+          <!-- Audio Preprocessing -->
+          <rect x="260" y="240" width="205" height="92" rx="9" class="proc"/>
+          <text x="362" y="272" text-anchor="middle" class="bl">Audio Preprocessing</text>
+          <text x="362" y="294" text-anchor="middle" class="sb">−16 LUFS · denoise · gain</text>
+          <text x="362" y="316" text-anchor="middle" class="mono">→ enhanced_audio.wav</text>
+        
+          <!-- Transcript Alignment -->
+          <rect x="260" y="360" width="205" height="92" rx="9" class="proc"/>
+          <text x="362" y="398" text-anchor="middle" class="bl">Transcript Alignment</text>
+          <text x="362" y="420" text-anchor="middle" class="sb">STT on enhanced audio</text>
+          <text x="362" y="440" text-anchor="middle" class="mono">→ transcript.json</text>
+        
+          <!-- Manifest Review gate -->
+          <rect x="520" y="270" width="180" height="48" rx="14" class="gate"/>
+          <text x="610" y="290" text-anchor="middle" class="gateT">✓ MANIFEST</text>
+          <text x="610" y="307" text-anchor="middle" class="gateT">REVIEW</text>
+        
+          <!-- Sequence Mapping -->
+          <rect x="740" y="248" width="220" height="110" rx="9" class="proc"/>
+          <text x="850" y="288" text-anchor="middle" class="bl">Sequence Mapping</text>
+          <text x="850" y="312" text-anchor="middle" class="sb">correlate visuals ↔ transcript</text>
+          <text x="850" y="334" text-anchor="middle" class="mono">→ plan.json (+ text)</text>
+        
+          <!-- Plan Review gate -->
+          <rect x="740" y="380" width="220" height="42" rx="14" class="gate"/>
+          <text x="850" y="406" text-anchor="middle" class="gateT">✓ PLAN REVIEW · human edit</text>
+        
+          <!-- Rendering & Composition sub-group -->
+          <rect x="1010" y="120" width="200" height="360" rx="12" class="grp"/>
+          <text x="1030" y="146" class="grpL" font-size="10.5">RENDER &amp; COMPOSE</text>
+          <rect x="1030" y="188" width="160" height="92" rx="9" class="rndr"/>
+          <text x="1110" y="228" text-anchor="middle" class="bl" font-size="14">HTML Build</text>
+          <text x="1110" y="252" text-anchor="middle" class="sb">plan → HTML DOM</text>
+          <rect x="1030" y="336" width="160" height="100" rx="9" class="rndr"/>
+          <text x="1110" y="374" text-anchor="middle" class="bl" font-size="14">Video Compose</text>
+          <text x="1110" y="396" text-anchor="middle" class="sb">HTML + enhanced</text>
+          <text x="1110" y="414" text-anchor="middle" class="sb">audio → synced mp4</text>
+        
+          <!-- ============ Final Review & Delivery ============ -->
+          <rect x="1270" y="190" width="160" height="100" rx="11" fill="rgba(242,107,107,0.11)" stroke="#F26B6B" stroke-width="1.6"/>
+          <text x="1350" y="228" text-anchor="middle" class="bl" font-size="14">Final Review</text>
+          <text x="1350" y="248" text-anchor="middle" class="bl" font-size="14">&amp; Sync QC</text>
+          <text x="1350" y="270" text-anchor="middle" class="sb">render + sync</text>
+        
+          <rect x="1270" y="340" width="160" height="86" rx="11" class="out"/>
+          <text x="1350" y="378" text-anchor="middle" class="bl" font-size="14">Delivery</text>
+          <text x="1350" y="400" text-anchor="middle" class="mono" style="fill:#4ADE80;">final .mp4</text>
+        
+          <!-- ============ SUPPORT / ARTIFACTS LAYER ============ -->
+          <rect x="230" y="590" width="1000" height="180" rx="14" class="grp"/>
+          <text x="252" y="618" class="grpL">SUPPORT / ARTIFACTS LAYER</text>
+        
+          <rect x="300" y="638" width="300" height="106" rx="10" class="res"/>
+          <text x="450" y="678" text-anchor="middle" class="bl">Resource Library</text>
+          <text x="450" y="702" text-anchor="middle" class="sb">reusable icon / component set</text>
+          <text x="450" y="722" text-anchor="middle" class="mono" style="fill:#A78BFA;">read + write</text>
+        
+          <rect x="700" y="638" width="300" height="106" rx="10" class="cfg"/>
+          <text x="850" y="678" text-anchor="middle" class="bl">Config Mgmt</text>
+          <text x="850" y="702" text-anchor="middle" class="sb">theme · palette · pacing</text>
+          <text x="850" y="722" text-anchor="middle" class="sb" style="font-style:italic;">read-only</text>
+        
+          <!-- ============ FLOWS ============ -->
+          <!-- input fan-out to Visual + Audio -->
+          <path class="flA" d="M190,316 H225 V166 H260" marker-end="url(#arA)"/>
+          <path class="flA" d="M225,286 H260" marker-end="url(#arA)"/>
+        
+          <!-- Audio -> Transcript -->
+          <path class="fl" d="M362,332 V360" marker-end="url(#ar)"/>
+        
+          <!-- Visual + Transcript merge -> Manifest Review -->
+          <path class="fl" d="M465,166 H500 V294"/>
+          <path class="fl" d="M465,406 H500 V294"/>
+          <path class="fl" d="M500,294 H520" marker-end="url(#ar)"/>
+        
+          <!-- Manifest Review -> Sequence Mapping -->
+          <path class="fl" d="M700,294 H740" marker-end="url(#ar)"/>
+        
+          <!-- Sequence Mapping -> Plan Review -->
+          <path class="flA" d="M850,358 V380" marker-end="url(#arA)"/>
+        
+          <!-- Plan Review -> HTML Build -->
+          <path class="fl" d="M960,401 H985 V234 H1030" marker-end="url(#ar)"/>
+        
+          <!-- HTML Build -> Video Compose -->
+          <path class="fl" d="M1110,280 V336" marker-end="url(#ar)"/>
+        
+          <!-- Video Compose -> Final QC -->
+          <path class="fl" d="M1190,386 H1232 V240 H1270" marker-end="url(#ar)"/>
+        
+          <!-- Final QC -> Delivery -->
+          <path class="flG" d="M1350,290 V340" marker-end="url(#arG)"/>
+        
+          <!-- Support layer -> Processing (role-level connections) -->
+          <!-- Resource Library: read + write (bidirectional) -->
+          <path class="flP" d="M450,638 V540" marker-start="url(#arPs)" marker-end="url(#arP)"/>
+          <!-- Config Mgmt: read-only into Rendering -->
+          <path class="flP" d="M850,638 V560 H1110 V480" marker-end="url(#arP)"/>
+        </svg>
+        <figcaption><b>Fig. 1 — System architecture.</b> Audio Preprocessing cleans the recorded track once and feeds both Transcript Alignment and the final Video Compose. Manifest &amp; Plan reviews run inline; Plan Review is the human-edit point. Config Mgmt feeds Rendering directly and is read-only.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ===================== PIPELINE ===================== -->
+    <section class="item" id="pipeline">
+      <div class="item-eyebrow">
+        <span class="item-num">◇ 2.2</span>
+        <span class="item-status revised">↻ UPDATED</span>
+      </div>
+      <h2 class="item-title">Pipeline Execution &amp; Data Flow</h2>
+      <div class="item-note">Task-by-task execution flow, with data-artifact and review connections shown explicitly.</div>
+
+      <figure class="diagram">
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-swatch" style="border-top-color:#E8A33D;"></span>Input / Review Gate</span>
+          <span class="legend-item"><span class="legend-swatch" style="border-top-color:#5FD4C7;"></span>Processing hand-off</span>
+          <span class="legend-item"><span class="legend-box" style="border-color:#A78BFA;background:rgba(167,139,250,0.15);"></span>Resource Library (read+write)</span>
+          <span class="legend-item"><span class="legend-swatch" style="border-top-color:#4ADE80;"></span>Final output</span>
+        </div>
+<svg viewBox="0 0 820 1090" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif">
+          <defs>
+            <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 z" fill="#5FD4C7"/>
+            </marker>
+            <marker id="arAmber" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 z" fill="#E8A33D"/>
+            </marker>
+            <marker id="arGreen" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 z" fill="#4ADE80"/>
+            </marker>
+            <style>
+              .bl   { fill:#E6EDF3; font-size:14px; font-weight:600; }
+              .sb   { fill:#9AA6B8; font-size:11px; }
+              .mono { fill:#5FD4C7; font-size:11px; font-family:'JetBrains Mono','Courier New',monospace; }
+              .monoP{ fill:#A78BFA; font-size:11px; font-family:'JetBrains Mono','Courier New',monospace; }
+              .lbl  { fill:#6B7383; font-size:11px; font-weight:600; letter-spacing:0.14em; }
+              .artL { fill:#C9D4E3; font-size:12.5px; font-family:'JetBrains Mono','Courier New',monospace; }
+              .gateT{ fill:#E8A33D; font-size:11.5px; font-weight:700; letter-spacing:0.04em; }
+              .fl   { stroke:#5FD4C7; stroke-width:1.7; fill:none; }
+              .flA  { stroke:#E8A33D; stroke-width:1.7; fill:none; }
+              .flG  { stroke:#4ADE80; stroke-width:1.9; fill:none; }
+              .proc { fill:rgba(95,212,199,0.09); stroke:#5FD4C7; stroke-width:1.4; }
+              .inp  { fill:rgba(232,163,61,0.11); stroke:#E8A33D; stroke-width:1.5; stroke-dasharray:6 4; }
+              .res  { fill:rgba(167,139,250,0.10); stroke:#A78BFA; stroke-width:1.4; }
+              .cfg  { fill:rgba(135,146,163,0.10); stroke:#8792A3; stroke-width:1.4; }
+              .gate { fill:rgba(232,163,61,0.13); stroke:#E8A33D; stroke-width:1.2; }
+              .rndr { fill:rgba(232,163,61,0.10); stroke:#E8A33D; stroke-width:1.4; }
+              .grp  { fill:none; stroke:#2C3346; stroke-width:1.3; stroke-dasharray:5 4; }
+              .grpL { fill:#6B7383; font-size:10.5px; font-weight:600; letter-spacing:0.13em; }
+              .out  { fill:rgba(74,222,128,0.12); stroke:#4ADE80; stroke-width:1.5; }
+            </style>
+          </defs>
+        
+          <!-- dark backdrop -->
+          <rect x="0" y="0" width="820" height="1090" fill="#0B0E14"/>
+        
+          <!-- INPUT -->
+          <text x="34" y="66" class="lbl">INPUT</text>
+          <rect x="270" y="24" width="280" height="74" rx="10" class="inp"/>
+          <text x="410" y="54" text-anchor="middle" class="bl">slide deck (PPTX)</text>
+          <text x="410" y="78" text-anchor="middle" class="sb">lecture video (MP4 + audio)</text>
+        
+          <!-- input fan-out -->
+          <path class="fl" d="M410,98 L410,126"/>
+          <path class="fl" d="M220,126 L600,126"/>
+          <path class="fl" d="M220,126 L220,150" marker-end="url(#ar)"/>
+          <path class="fl" d="M600,126 L600,150" marker-end="url(#ar)"/>
+        
+          <!-- Visual Extraction -->
+          <rect x="110" y="150" width="220" height="92" rx="8" class="proc"/>
+          <text x="220" y="190" text-anchor="middle" class="bl">Visual Extraction</text>
+          <text x="220" y="216" text-anchor="middle" class="mono">→ manifest.json</text>
+        
+          <!-- Audio Preprocessing -->
+          <rect x="470" y="150" width="260" height="92" rx="8" class="proc"/>
+          <text x="600" y="180" text-anchor="middle" class="bl">Audio Preprocessing</text>
+          <text x="600" y="202" text-anchor="middle" class="sb">normalize −16 LUFS · denoise · gain</text>
+          <text x="600" y="224" text-anchor="middle" class="mono">→ enhanced_audio.wav</text>
+        
+          <!-- Audio -> Transcript -->
+          <path class="fl" d="M600,242 L600,286" marker-end="url(#ar)"/>
+        
+          <!-- Transcript Alignment -->
+          <rect x="470" y="286" width="260" height="92" rx="8" class="proc"/>
+          <text x="600" y="320" text-anchor="middle" class="bl">Transcript Alignment</text>
+          <text x="600" y="342" text-anchor="middle" class="sb">STT on enhanced audio</text>
+          <text x="600" y="364" text-anchor="middle" class="mono">→ transcript.json</text>
+        
+          <!-- merge into Manifest Review -->
+          <path class="fl" d="M220,242 L220,404"/>
+          <path class="fl" d="M600,378 L600,404"/>
+          <path class="fl" d="M220,404 L600,404"/>
+          <path class="flA" d="M410,404 L410,418" marker-end="url(#arAmber)"/>
+        
+          <!-- Manifest Review gate -->
+          <rect x="290" y="418" width="240" height="30" rx="15" class="gate"/>
+          <text x="410" y="438" text-anchor="middle" class="gateT">✓ MANIFEST REVIEW</text>
+        
+          <!-- artifact label -->
+          <path class="fl" d="M410,448 L410,462"/>
+          <text x="410" y="482" text-anchor="middle" class="artL">manifest.json + transcript.json</text>
+        
+          <!-- split to Sequence Mapping / Resource Library -->
+          <path class="fl" d="M410,490 L410,500"/>
+          <path class="fl" d="M220,500 L600,500"/>
+          <path class="fl" d="M220,500 L220,514" marker-end="url(#ar)"/>
+          <path class="fl" d="M600,500 L600,514" marker-end="url(#ar)"/>
+        
+          <!-- Sequence Mapping -->
+          <rect x="100" y="514" width="240" height="92" rx="8" class="proc"/>
+          <text x="220" y="548" text-anchor="middle" class="bl">Sequence Mapping</text>
+          <text x="220" y="570" text-anchor="middle" class="sb">correlate visuals ↔ transcript</text>
+          <text x="220" y="592" text-anchor="middle" class="mono">→ plan.json (+ text)</text>
+        
+          <!-- Resource Library -->
+          <rect x="470" y="514" width="260" height="92" rx="8" class="res"/>
+          <text x="600" y="548" text-anchor="middle" class="bl">Resource Library</text>
+          <text x="600" y="570" text-anchor="middle" class="sb">read + write; add new</text>
+          <text x="600" y="588" text-anchor="middle" class="sb">unmatched visual assets</text>
+        
+          <!-- Sequence Mapping -> Plan Review -->
+          <path class="flA" d="M220,606 L220,628" marker-end="url(#arAmber)"/>
+        
+          <!-- Plan Review gate -->
+          <rect x="70" y="628" width="300" height="30" rx="15" class="gate"/>
+          <text x="220" y="648" text-anchor="middle" class="gateT">✓ PLAN REVIEW — human edit point</text>
+        
+          <!-- Config Mgmt -->
+          <rect x="470" y="672" width="220" height="86" rx="8" class="cfg"/>
+          <text x="580" y="704" text-anchor="middle" class="bl">Config Mgmt</text>
+          <text x="580" y="726" text-anchor="middle" class="sb">read-only:</text>
+          <text x="580" y="742" text-anchor="middle" class="sb">theme / pacing</text>
+        
+          <!-- Resource Library assets feed render -->
+          <text x="642" y="646" class="sb" font-style="italic">assets feed render</text>
+        
+          <!-- flows into Rendering -->
+          <!-- plan review -> HTML build -->
+          <path class="fl" d="M220,658 L220,790 L270,790 L270,812" marker-end="url(#ar)"/>
+          <!-- config -> rendering -->
+          <path class="fl" d="M580,758 L580,784 L470,784 L470,812" marker-end="url(#ar)"/>
+          <!-- resource library -> rendering -->
+          <path class="fl" d="M600,606 L600,790 L600,812" marker-end="url(#ar)"/>
+        
+          <!-- RENDERING & COMPOSITION group -->
+          <rect x="130" y="812" width="560" height="118" rx="10" class="grp"/>
+          <text x="150" y="834" class="grpL">RENDERING &amp; COMPOSITION</text>
+        
+          <rect x="160" y="846" width="220" height="66" rx="8" class="rndr"/>
+          <text x="270" y="876" text-anchor="middle" class="bl">HTML Build</text>
+          <text x="270" y="897" text-anchor="middle" class="sb">plan → HTML DOM</text>
+        
+          <rect x="430" y="846" width="230" height="66" rx="8" class="rndr"/>
+          <text x="545" y="876" text-anchor="middle" class="bl">Video Compose</text>
+          <text x="545" y="897" text-anchor="middle" class="sb">HTML + audio → synced mp4</text>
+        
+          <path class="fl" d="M380,879 L430,879" marker-end="url(#ar)"/>
+        
+          <!-- rendering -> Final Review -->
+          <path class="flA" d="M410,930 L410,952" marker-end="url(#arAmber)"/>
+        
+          <!-- Final Review gate -->
+          <rect x="266" y="952" width="288" height="32" rx="16" class="gate"/>
+          <text x="410" y="973" text-anchor="middle" class="gateT">✓ FINAL REVIEW &amp; SYNC QC</text>
+        
+          <!-- Final -> Delivery -->
+          <path class="flG" d="M410,984 L410,1006" marker-end="url(#arGreen)"/>
+        
+          <!-- Delivery -->
+          <rect x="310" y="1006" width="200" height="60" rx="10" class="out"/>
+          <text x="410" y="1035" text-anchor="middle" class="bl">Delivery</text>
+          <text x="410" y="1055" text-anchor="middle" class="mono" style="fill:#4ADE80;">.mp4</text>
+        </svg>
+        <figcaption><b>Fig. 2 — Pipeline execution &amp; data flow.</b> Top-to-bottom task order: parallel Visual Extraction / Audio Preprocessing → Manifest Review gate → Sequence Mapping + Resource Library → Plan Review (human edit point) → Rendering &amp; Composition → Final Review &amp; Sync QC → Delivery. Amber marks input and review gates; teal marks hand-offs between processing units; green marks the final output.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ===================== 1.1 ===================== -->
+    <section class="item" id="item-1-1">
+      <div class="item-eyebrow">
+        <span class="item-num">1.1</span>
+        <span class="item-status final">✓ FINAL</span>
+      </div>
+      <h2 class="item-title">Core Language &amp; Runtime Finalization</h2>
+
+      <h3>Candidate Options</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:26%">Option</th><th style="width:37%">Strengths</th><th>Weaknesses</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Python 3.12</strong><br><span style="color:var(--text-faint)">single-language</span></td><td>Best-in-class media/ML ecosystem (moviepy, ffmpeg-python, whisper, pptx libs, torch/onnx), fast solo iteration, huge stdlib for local process orchestration</td><td>GIL limits true CPU parallelism (mitigated by multiprocessing for render/STT stages)</td></tr>
+            <tr><td><strong>Node.js/TypeScript</strong><br><span style="color:var(--text-faint)">single-language</span></td><td>Excellent async I/O, strong typing with TS</td><td>Media/ML ecosystem is thin — constant shelling out to Python tools anyway, defeats "single language" goal</td></tr>
+            <tr><td><strong>Python + Rust/Go</strong><br><span style="color:var(--text-faint)">dual-language</span></td><td>Best raw performance for render/muxing stages</td><td>Adds build toolchain complexity, FFI friction — actively hostile to a 5-day solo timeline</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Recommendation &amp; Rationale</h3>
+      <p><strong>Python 3.12, single-language, with <code>asyncio</code> for I/O orchestration and <code>multiprocessing</code>/<code>concurrent.futures</code> for CPU-bound stages (STT, rendering).</strong></p>
+      <p>This is the only option where every pipeline stage (PPTX parsing, audio/video muxing via <code>ffmpeg</code>, STT via <code>whisper</code>/<code>faster-whisper</code>, TTS, alignment) has a mature, first-party or near-first-party library — meaning zero time spent building glue code or subprocess bridges to a second language. Async I/O covers orchestration (file watching, subprocess supervision, job queue polling); process pools cover CPU-bound stages without fighting the GIL. For a 5-day solo build, ecosystem maturity beats raw performance every time — you are not building a render farm, you're building a correct, resumable pipeline on one machine.</p>
+
+      <h3>Risks &amp; Trade-offs</h3>
+      <ul>
+        <li><strong>GIL bottlenecks on CPU-heavy stages</strong> (STT, video encode) → mitigate by shelling out to <code>ffmpeg</code>/<code>whisper.cpp</code> binaries (already release the GIL) rather than pure-Python encode loops.</li>
+        <li><strong>Dependency sprawl</strong> (torch, ffmpeg bindings, pptx parsers) → pin versions aggressively on Day 1; don't let <code>pip install</code> drift mid-build.</li>
+        <li><strong>Packaging/venv discipline</strong> matters more solo than on a team — no one else will catch a broken lockfile.</li>
+      </ul>
+
+      <h3>Claude Code Implementation Spec</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>claude-code-spec · language-runtime.txt</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-plaintext">Task: Initialize Python 3.12 project foundation for local media pipeline.
+
+1. Create project root with `uv` (preferred) or `poetry` for dependency management.
+2. Generate pyproject.toml with:
+   - python = "^3.12"
+   - core deps: ffmpeg-python, python-pptx, faster-whisper, pydantic>=2, 
+     typer (CLI), rich (logging/progress), sqlite-utils
+   - dev deps: pytest, pytest-cov, ruff, mypy
+3. Enforce strict typing: mypy strict = true in pyproject.toml.
+4. Create `.python-version` pinned to 3.12.x.
+5. Verify `ffmpeg` binary is on PATH via a startup healthcheck script 
+   (scripts/check_env.py) — fail fast with a clear error if missing.
+6. Output: a runnable `python -m pipeline --help` stub via Typer CLI 
+   entrypoint at src/pipeline/cli.py.</code></pre>
+      </div>
+    </section>
+
+    <!-- ===================== 1.2 ===================== -->
+    <section class="item" id="item-1-2">
+      <div class="item-eyebrow">
+        <span class="item-num">1.2</span>
+        <span class="item-status final">✓ FINAL</span>
+      </div>
+      <h2 class="item-title">Local State Store Finalization</h2>
+
+      <h3>Candidate Options</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:26%">Option</th><th style="width:37%">Strengths</th><th>Weaknesses</th></tr></thead>
+          <tbody>
+            <tr><td><strong>SQLite</strong><br><span style="color:var(--text-faint)">file-based, WAL mode</span></td><td>Zero-ops, ACID, handles concurrent readers + single writer cleanly, native Python support, trivially inspectable</td><td>Not built for high write concurrency (irrelevant here — single pipeline process)</td></tr>
+            <tr><td><strong>Flat JSON/YAML files</strong><br><span style="color:var(--text-faint)">per job</span></td><td>Dead simple, human-readable, git-diffable</td><td>No transactional guarantees — a crash mid-write corrupts state; no query capability across jobs</td></tr>
+            <tr><td><strong>Postgres</strong><br><span style="color:var(--text-faint)">local daemon</span></td><td>Full RDBMS features, familiar tooling</td><td>Requires a running service, backup/restore ceremony, connection pooling — pure overkill for one machine</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Recommendation &amp; Rationale</h3>
+      <p><strong>SQLite in WAL mode, single file at <code>.pipeline/state.db</code>, accessed through a thin repository layer.</strong></p>
+      <p>SQLite gives you crash-safe, transactional writes (critical for checkpointing — see 1.4) with zero operational overhead: no daemon to start, no port to manage, no backup strategy beyond copying a file. WAL mode specifically solves the "concurrency" risk — it allows the main process to write job state while a monitoring/CLI-status process reads concurrently, without lock contention. This is the correct middle point between "flat files" (durability risk) and "Postgres" (infrastructure you don't need).</p>
+
+      <h3>Risks &amp; Trade-offs</h3>
+      <ul>
+        <li><strong>Schema migrations are manual</strong> — no SQLite migration framework is bundled; must hand-roll a lightweight migration runner or the schema will drift silently.</li>
+        <li><strong>Large blob storage</strong> (rendered frames, audio buffers) should <strong>never</strong> go into SQLite rows — store as files on disk, reference by path in the DB.</li>
+        <li><strong>Single-writer constraint</strong>: if you later parallelize multiple pipeline jobs, writes must be serialized through one connection/queue — fine at solo scale.</li>
+      </ul>
+
+      <h3>Claude Code Implementation Spec</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>claude-code-spec · state-store.txt</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-plaintext">Task: Set up SQLite-backed local state store with WAL mode and repository pattern.
+
+1. Create src/pipeline/state/db.py:
+   - Initialize SQLite connection at .pipeline/state.db
+   - PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; on every connection open
+2. Create src/pipeline/state/schema.sql with initial tables:
+   - jobs (id TEXT PK, source_path TEXT, status TEXT, schema_version TEXT,
+     created_at, updated_at)
+   - job_stages (id INTEGER PK, job_id FK, stage_name TEXT, status TEXT,
+     checkpoint_data TEXT (JSON), started_at, completed_at, error TEXT)
+   - artifacts (id INTEGER PK, job_id FK, stage_name TEXT, artifact_type TEXT,
+     file_path TEXT, checksum TEXT, created_at)
+3. Create src/pipeline/state/migrations/ with a numbered migration runner
+   (0001_init.sql, 0002_*.sql...) applied on startup via a simple
+   "schema_migrations" tracking table.
+4. Create src/pipeline/state/repository.py exposing typed methods:
+   create_job(), update_stage_status(), get_resumable_jobs(),
+   save_checkpoint(), get_last_checkpoint() — no raw SQL outside this file.
+5. Add a CLI command `pipeline db inspect` (Typer) that dumps current job/stage
+   status as a Rich table for quick local debugging.</code></pre>
+      </div>
+    </section>
+
+    <!-- ===================== 1.3 ===================== -->
+    <section class="item" id="item-1-3">
+      <div class="item-eyebrow">
+        <span class="item-num">1.3</span>
+        <span class="item-status revised">↻ REVISED v3</span>
+      </div>
+      <h2 class="item-title">Project Structure &amp; Module Boundaries</h2>
+      <div class="item-note">Locked to JSON-contract stages + per-stage LXD container isolation. <strong>v3</strong> (during Task 4 execution): containers renamed to reflect grouping by <em>computational</em> footprint rather than by task — <code>pipeline-structure</code> / <code>pipeline-speech</code> / <code>pipeline-render</code>; confirmed no GPU on the build machine; corrected Resource Library's matching logic to run inside <code>pipeline-structure</code> (a real compute dependency on manifest+transcript data) rather than as a host-side service.</div>
+
+      <h3>Candidate Options</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:26%">Option</th><th style="width:37%">Strengths</th><th>Weaknesses</th></tr></thead>
+          <tbody>
+            <tr><td><strong>In-process modular monolith</strong><br><span style="color:var(--text-faint)"><code>Stage</code> protocol, one process</span></td><td>Simplest to build, no container overhead</td><td>No real dependency isolation — STT/TTS's CUDA stack and Render's ffmpeg build share one environment, real conflict risk</td></tr>
+            <tr><td><strong>JSON-contract stages</strong><br><span style="color:var(--text-faint)">dedicated LXD containers</span></td><td>True dependency isolation per stage group, independently testable by hand-feeding JSON, portable/reproducible</td><td>Upfront container build time; orchestrator must shell out via <code>lxc exec</code></td></tr>
+            <tr><td><strong>Script-per-stage</strong><br><span style="color:var(--text-faint)">no shared framework</span></td><td>Fastest to start writing</td><td>No shared checkpoint/error handling, no isolation — guarantees rework and dependency collisions by Day 3</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Recommendation &amp; Rationale</h3>
+      <p><strong>JSON-contract stages, grouped into three dependency-isolated LXD containers, orchestrated from the host.</strong></p>
+      <p>Each stage is a pure transformation: an input JSON manifest (+ referenced artifact files) in, an output JSON manifest (+ new artifact files) out. Stages never call each other's code directly — they are invoked as standalone CLI commands, e.g. <code>pipeline run-stage render --input &lt;path&gt; --output &lt;path&gt;</code>. This solves both named LXD drivers directly:</p>
+      <ul>
+        <li><strong>Dependency isolation</strong> — the STT/TTS stack (Whisper, TTS engine, CUDA/torch) and the Render/Mux stack (a specific hardware-accelerated <code>ffmpeg</code> build) are the most conflict-prone dependency sets in this pipeline. Isolating them removes that risk entirely.</li>
+        <li><strong>Portability/reproducibility</strong> — because the interface is just JSON + files, any container image can be exported and run identically on another machine later.</li>
+      </ul>
+
+      <p style="margin-top:22px;"><strong>Container-to-stage grouping</strong> (by actual dependency divergence, not one container per stage):</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:24%">Container</th><th style="width:28%">Stages</th><th>Why grouped this way</th></tr></thead>
+          <tbody>
+            <tr><td><code>pipeline-structure</code></td><td>Visual Deconstruction, Sequence Mapping, Resource Library matching</td><td>Light parsing + correlation logic — <code>python-pptx</code>, <code>ffprobe</code>, no GPU, no heavy ML. Also runs the Resource Library's matching logic (see note below) since it's a <em>data</em> dependency on manifest+transcript, not a compute dependency — no separate container needed for it.</td></tr>
+            <tr><td><code>pipeline-speech</code></td><td>Audio Preprocessing, Transcript Alignment</td><td>ffmpeg audio filters (<code>loudnorm</code>, denoise) + Whisper STT — grouped here because both need the speech-model environment. <strong>No GPU passthrough</strong> — confirmed CPU-only machine (Intel UHD integrated graphics, no NVIDIA GPU); Whisper runs on CPU, model size chosen accordingly in Task 5. <em>(No TTS — narration is the pre-recorded lecture track, only transcribed, never generated.)</em></td></tr>
+            <tr><td><code>pipeline-render</code></td><td>HTML Build, Video Compose</td><td>Hardware-accelerated <code>ffmpeg</code> build for compositing — different flags/version than <code>pipeline-structure</code>'s lightweight probing use</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <blockquote><p><strong>Host ↔ container interface:</strong> one shared host directory (<code>res/workdir/</code>) bind-mounted into every container at <code>/workdir</code> (read-write, per-job). <code>res/library/</code> is bind-mounted at <code>/resources</code> — <strong>read-write in <code>pipeline-structure</code></strong>, <strong>read-only in <code>pipeline-render</code></strong>, and not mounted at all in <code>pipeline-speech</code> (it never touches visual assets). The orchestrator runs on the <strong>host</strong>, never inside a container — it is the only component that talks to the state store (SQLite) and issues <code>lxc exec</code> calls. <strong>Config Mgmt</strong> stays host-side (it's plain config-file reading, no environment-specific dependency, nothing to isolate). <strong>Resource Library is different from Config Mgmt</strong> — corrected during Task 4 discussion: its matching logic (checking whether a deconstructed icon/component already exists) is real compute over the outputs of Visual Deconstruction and Transcript Alignment, not passive storage, so it runs as stage code <em>inside <code>pipeline-structure</code></em> — the asset files themselves are just the bind-mounted storage.</p></blockquote>
+
+      <h3>Risks &amp; Trade-offs</h3>
+      <ul>
+        <li><strong>Interface discipline</strong>: stages communicate only via JSON manifests and file paths under <code>/workdir</code> — never shared in-memory state, never direct imports across stage modules.</li>
+        <li><strong>Base image build time</strong> is a real, one-time cost — budget setup time for building/validating all three images (installing torch/CUDA inside a container is not instant).</li>
+        <li><strong>Mount permission mismatches</strong>: LXD's UID-mapped containers can write files with different ownership on the host — fix once via <code>idmap</code> config, not per-job.</li>
+        <li><strong>No GPU available</strong> (confirmed during Task 4 hardware check) — <code>pipeline-speech</code> runs Whisper on CPU. This is a real, ongoing constraint: transcription will be slower than GPU inference, and Task 5 should default to a smaller Whisper model (tiny/base/small) rather than large, to keep run times reasonable.</li>
+        <li><strong>Don't over-isolate Ingest</strong> — no conflicting deps; containerizing it is for consistency, not a hard need.</li>
+      </ul>
+
+      <h3>Claude Code Implementation Spec</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>claude-code-spec · project-structure.py</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-python"># Task: Scaffold JSON-contract pipeline stages orchestrated across dedicated LXD containers.
+
+# 1. Project layout:
+#    src/pipeline/
+#      __init__.py
+#      cli.py                     # Typer entrypoint (host-side + in-container stage CLI)
+#      orchestrator.py            # Host-side runner: sequences stages, handles resume,
+#                                  # invokes stages via `lxc exec`, writes checkpoints
+#      stages/
+#        __init__.py
+#        base.py                  # Stage protocol: run(input_manifest) -> output_manifest
+#        ingest.py                 # PPTX/MP4 parsing stage
+#        align.py                  # Content/timing alignment (STT-driven)
+#        narrate.py                 # TTS/narration generation stage
+#        render.py                  # Video rendering stage
+#        mux.py                       # Final audio/video muxing stage
+#      state/
+#        db.py, schema.sql, repository.py, migrations/
+#      models/
+#        schemas.py                # Pydantic models: JobConfig, StageManifest, Artifact
+#      utils/
+#        ffmpeg_wrapper.py, logging.py
+#    infra/lxd/
+#      profiles/                   # ingest.yaml, stt-narrate.yaml, render-mux.yaml
+#      images/                     # per-container build scripts / dependency manifests
+#      STAGE_CONTAINER_MAP.md      # documents which stage runs in which container
+#    tests/
+#      unit/                       # per-stage isolated tests (feed JSON by hand)
+#      fixtures/                   # small sample .pptx/.mp4 files, <1MB each
+
+# 2. Define src/pipeline/stages/base.py:
+class Stage(Protocol):
+    name: str
+    def run(self, input_manifest: StageManifest) -> StageManifest: ...
+    def validate_output(self, result: StageManifest) -> bool: ...
+
+# Each stage's module also exposes a CLI entrypoint:
+#   pipeline run-stage <name> --input <path> --output <path>
+# — this is the ONLY way the orchestrator invokes it; no direct Python
+# imports between stage modules, no in-process calls.
+
+# 3. Define src/pipeline/models/schemas.py using Pydantic v2:
+#    - JobConfig(job_id, source_path, config)
+#    - StageManifest(schema_version, stage_name, artifacts: list[Artifact], metadata: dict)
+#    - Artifact(artifact_type, file_path, checksum)
+
+# 4. Orchestrator invokes stages via container exec, not function calls:
+class ContainerStageRunner:
+    def run_stage(self, container_name, stage_name, input_path, output_path):
+        subprocess.run([
+            "lxc", "exec", container_name, "--",
+            "pipeline", "run-stage", stage_name,
+            "--input", input_path, "--output", output_path
+        ], check=True, capture_output=True)
+
+STAGE_CONTAINER_MAP = {
+    "visual_deconstruction": "pipeline-structure",
+    "sequence_mapping":      "pipeline-structure",
+    "audio_preprocessing":   "pipeline-speech",
+    "transcript_alignment":  "pipeline-speech",
+    "html_build":            "pipeline-render",
+    "video_compose":         "pipeline-render",
+}
+# Illustrative — the real core/registry.py (Task 6) starts EMPTY on purpose.
+# Module names are decided at implementation time, not guessed upfront; this
+# map is populated one real entry at a time via register_stage(), only once
+# each module is actually built. Config Mgmt stays host-side, never in this
+# map. Resource Library's matching logic lives inside pipeline-structure's
+# stage code — it's not a separate entry either.
+
+# 5. Add a stage registry (STAGE_ORDER: list[str]) in orchestrator.py so stage
+#    sequence is declared in one place, not scattered across the codebase.
+
+# 6. NOTE — deferred to a later, separate task: the actual `lxc launch` /
+#    profile / image-build scripts that create the three containers. This
+#    spec only defines the CONTRACT each container-hosted stage must satisfy;
+#    the scaffolding scripts to create the containers and repo folders will
+#    be built next, following the same parameterized-script pattern already
+#    in use, adapted to this pipeline's three containers.</code></pre>
+      </div>
+    </section>
+
+    <!-- ===================== 1.4 ===================== -->
+    <section class="item" id="item-1-4">
+      <div class="item-eyebrow">
+        <span class="item-num">1.4</span>
+        <span class="item-status final">✓ FINAL</span>
+      </div>
+      <h2 class="item-title">Job Resumability &amp; Checkpointing</h2>
+      <div class="item-note">Confirmed applicable — clarified for the container-based architecture (1.3 v2).</div>
+
+      <blockquote><p><strong>Clarification:</strong> with stages now running as isolated LXD container invocations rather than in-process function calls, the checkpoint boundary and the container-invocation boundary become the <strong>same boundary</strong> — this makes resumability cleaner, not less applicable. Each <code>lxc exec … pipeline run-stage …</code> call either fully succeeds or fails outright; there is no in-process partial state to worry about, since every stage starts fresh from its input JSON manifest every time.</p></blockquote>
+
+      <h3>Concrete Design</h3>
+      <p><strong>Checkpoint granularity = per-stage (= per-container-invocation), not per-substep.</strong> Each of the five stages (Ingest, Align, Narrate, Render, Mux) is the atomic unit of resumability. A stage either completes fully or is retried from scratch — no partial-stage resume. This is the correct granularity for a 5-day build: per-substep checkpointing adds real engineering cost for a benefit you won't hit often at local, single-job scale.</p>
+
+      <p><strong>Checkpoint contents</strong> (persisted to <code>job_stages.checkpoint_data</code> as JSON):</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>checkpoint_data · example.json</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-json">{
+  "stage_name": "render",
+  "status": "completed",
+  "input_checksums": {"aligned_script.json": "sha256:...", "narration.wav": "sha256:..."},
+  "output_artifacts": [
+    {"type": "video/mp4", "path": "workdir/render/output.mp4", "checksum": "sha256:..."}
+  ],
+  "attempt_count": 1,
+  "duration_seconds": 143.2
+}</code></pre>
+      </div>
+
+      <h3>Resume Logic</h3>
+      <ol>
+        <li>On job start, orchestrator queries <code>get_resumable_jobs()</code> for status = <code>in_progress</code> or <code>failed</code>.</li>
+        <li>For each stage in order, check <code>job_stages.status</code>. If <code>completed</code> <strong>and</strong> input checksums still match current inputs → skip (no container invocation needed). If checksums mismatch → invalidate downstream checkpoints and re-run from that stage forward via its container.</li>
+        <li>If <code>failed</code> → retry via a fresh <code>lxc exec</code> invocation (bounded by <code>attempt_count</code>, max 3 before surfacing to user). The container itself needs no awareness of retry state — that logic lives entirely in the host-side orchestrator.</li>
+      </ol>
+
+      <h3>Trade-offs &amp; Edge Cases</h3>
+      <ul>
+        <li><strong>Stale checkpoints on changed inputs</strong>: always validate via checksum, never trust a "completed" status blindly.</li>
+        <li><strong>Partial file writes on crash</strong>: stages must write outputs to a temp path and atomically rename on success (<code>os.replace</code>).</li>
+        <li><strong>Non-deterministic stages</strong> (TTS voice variance): checkpointing by checksum still works since you're checkpointing output artifacts, not re-deriving determinism.</li>
+      </ul>
+
+      <h3>Claude Code Implementation Spec</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>claude-code-spec · resumability.txt</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-plaintext">Task: Implement checkpoint/resume logic in the orchestrator.
+
+1. Add src/pipeline/orchestrator.py logic:
+   - compute_checksum(path) -> sha256 hex digest (streamed, chunked read)
+   - should_skip_stage(stage, ctx) -> bool: compares job_stages checkpoint
+     input_checksums against current input artifact checksums
+   - run_stage_with_checkpoint(stage, ctx): wraps ContainerStageRunner.run_stage()
+     (from 1.3) in try/except, expects output written to <workdir>/<stage>/.tmp/
+     inside the container, atomic-renames on success (host-side, since /workdir
+     is bind-mounted), persists checkpoint_data via repository.save_checkpoint()
+     including which container_name executed the stage
+2. Add retry policy: max_attempts=3 per stage, exponential backoff
+   (2s, 8s, 32s) between retries, configurable via pipeline.toml.
+3. Add CLI command `pipeline resume <job_id>` that re-invokes orchestrator
+   with resume=True, skipping validated-complete stages.
+4. Add CLI command `pipeline status <job_id>` showing per-stage status,
+   checksums, and last error (if any) as a Rich table.
+5. Unit tests: simulate a crash mid-stage (raise exception in stage 3 of 5),
+   assert resume skips stages 1-2 and retries stage 3 only.</code></pre>
+      </div>
+    </section>
+
+    <!-- ===================== 1.5 ===================== -->
+    <section class="item" id="item-1-5">
+      <div class="item-eyebrow">
+        <span class="item-num">1.5</span>
+        <span class="item-status final">✓ FINAL</span>
+      </div>
+      <h2 class="item-title">Schema Versioning Strategy</h2>
+
+      <h3>Concrete Design</h3>
+      <p>Every persisted artifact schema (job config, checkpoint data, alignment output, stage manifests) carries an explicit <code>schema_version: str</code> field using strict semver (<code>MAJOR.MINOR.PATCH</code>), placed as the <strong>first key</strong> in every JSON schema for human scannability.</p>
+      <ul>
+        <li><strong>MAJOR</strong> bump: breaking change (field removed, type changed, semantic meaning changed) → requires a migration function.</li>
+        <li><strong>MINOR</strong> bump: additive, backward-compatible (new optional field with a default) → no migration needed, just a version bump.</li>
+        <li><strong>PATCH</strong> bump: non-structural (doc/description changes only) → no code impact.</li>
+        <li>All schemas start at <code>1.0.0</code> on Day 1 — do not skip versioning "because it's early."</li>
+      </ul>
+
+      <p><strong>Base template</strong> (every schema inherits this envelope):</p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>schema envelope · base.json</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-json">{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-08-12T10:00:00Z",
+  "generator": "pipeline.stages.align",
+  "data": { }
+}</code></pre>
+      </div>
+
+      <p><strong>Breaking change policy</strong>: a MAJOR bump requires a corresponding entry in <code>src/pipeline/models/migrations.py</code> mapping <code>(schema_name, from_version) -&gt; migrate_fn</code>. Old job data on disk is never mutated in place — migrations run at <em>read</em> time, producing an in-memory upgraded object.</p>
+
+      <h3>Trade-offs &amp; Edge Cases</h3>
+      <ul>
+        <li><strong>Version field omission</strong> in early hand-written fixtures → enforce via Pydantic model validation (required, no default) so a missing version fails loudly.</li>
+        <li><strong>Over-versioning stage-internal ephemeral data</strong> is wasted ceremony — only version data that persists across a checkpoint boundary or process restart.</li>
+        <li><strong>Migration drift</strong>: write the migration in the same commit as the breaking change, no exceptions.</li>
+      </ul>
+
+      <h3>Claude Code Implementation Spec</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>claude-code-spec · schema-versioning.py</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-python"># Task: Implement schema versioning envelope and migration framework.
+
+# 1. Create src/pipeline/models/envelope.py:
+class SchemaEnvelope(BaseModel):
+    schema_version: str  # required, validated against semver regex
+    generated_at: datetime
+    generator: str
+    data: dict
+
+# 2. Add semver validation helper (regex: ^\d+\.\d+\.\d+$) as a Pydantic
+#    field_validator on schema_version.
+
+# 3. Create src/pipeline/models/migrations.py:
+MIGRATIONS: dict[tuple[str, str], Callable[[dict], dict]] = {}
+
+def register_migration(schema_name: str, from_version: str):
+    def decorator(fn):
+        MIGRATIONS[(schema_name, from_version)] = fn
+        return fn
+    return decorator
+
+def migrate_to_latest(schema_name: str, payload: dict) -> dict:
+    # applies chained migrations until payload version == CURRENT_VERSION
+    ...
+
+# 4. Every stage output model (AlignmentResult, NarrationManifest, RenderManifest)
+#    wraps its `data` payload in SchemaEnvelope before writing to disk.
+
+# 5. Add a `pipeline schema check <file>` CLI command that loads a JSON file,
+#    reports its schema_version, and warns if a migration would be applied.</code></pre>
+      </div>
+    </section>
+
+    <!-- ===================== 1.6 ===================== -->
+    <section class="item" id="item-1-6">
+      <div class="item-eyebrow">
+        <span class="item-num">1.6</span>
+        <span class="item-status revised">↻ REVISED</span>
+      </div>
+      <h2 class="item-title">Quality &amp; Validation Thresholds</h2>
+      <div class="item-note">FPS rule revised to adaptive; all other thresholds confirmed.</div>
+
+      <h3>Concrete Design</h3>
+      <p>Numeric, non-negotiable gates enforced automatically after each relevant stage — a stage that fails validation does not get marked <code>completed</code>, blocking downstream stages per the resumability design in 1.4.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:26%">Metric</th><th style="width:38%">Threshold</th><th>Enforced After Stage</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Audio/video sync drift</strong></td><td>≤ <strong>80&nbsp;ms</strong> absolute offset at any alignment checkpoint</td><td>Align, Mux</td></tr>
+            <tr><td><strong>Render output frame rate</strong></td><td><span class="badge warn">ADAPTIVE</span> ≥ source <code>.mp4</code>'s original fps (via <code>ffprobe</code>); default <strong>30fps</strong> if source is PPTX-only</td><td>Render</td></tr>
+            <tr><td><strong>STT word error rate (WER)</strong></td><td>≤ <strong>12%</strong> on the reference sample set</td><td>Ingest</td></tr>
+            <tr><td><strong>Narration/TTS audio integrity</strong></td><td>0 clipped samples (peak &lt; -0.1 dBFS), no silence gaps &gt; <strong>500ms</strong> unless scripted</td><td>Narrate</td></tr>
+            <tr><td><strong>Final render output validation</strong></td><td><code>ffprobe</code> exit code 0, duration within <strong>±200ms</strong> of expected, no corrupt/zero-byte output</td><td>Mux</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:22px;"><strong>What these mean, in plain terms:</strong></p>
+      <ul>
+        <li><strong>Audio/video sync drift</strong> — the time gap between when something is <em>said</em> in the narration and when the matching visual appears on screen (e.g., narration says "as shown here" but the relevant slide/chart appears 200ms later). Comes from narration audio and slide-timing being generated on separate tracks and not perfectly aligned, or clock drift accumulating during muxing. Human perception starts noticing desync above roughly 100ms, so 80ms is the outer edge of "acceptable," not a target to hover near.</li>
+        <li><strong>Render output frame rate — adaptive rule</strong>: rather than a fixed floor, the pipeline must inherit the input's frame rate, never downgrade it. Run <code>ffprobe</code> on the source <code>.mp4</code> to read its fps; rendered output must be ≥ that value. No source video (pure PPTX input) → fall back to 30fps. This avoids silently producing lower quality than what was provided.</li>
+        <li><strong>STT WER</strong> — unchanged, 12% ceiling; broadcast-grade STT is closer to 5%, but 12% is realistic for local Whisper-class models without fine-tuning, and sufficient for driving alignment.</li>
+        <li><strong>TTS audio integrity</strong> — two checks bundled: <strong>clipping</strong> (digital distortion above 0 dBFS, sounds harsh/crackly — the -0.1 dBFS threshold keeps a safety margin), and <strong>silence gaps</strong> (unscripted dead air from a glitchy TTS pause — past 500ms reads as broken audio).</li>
+      </ul>
+
+      <blockquote><p>These are <strong>Day 1 starting thresholds</strong>, calibrated to be strict enough to catch real defects but loose enough not to block a 5-day build on marginal cases — meant to be tuned in Phase 2 against real fixture data, not treated as immutable law.</p></blockquote>
+
+      <h3>Trade-offs &amp; Edge Cases</h3>
+      <ul>
+        <li><strong>80ms sync drift is a compromise</strong>: tightening to broadcast-grade (±40ms) on Day 1 will burn debugging time the schedule doesn't have.</li>
+        <li><strong>Adaptive fps requires reading source metadata before rendering</strong> — computed per-job and stored alongside that job's checkpoint data.</li>
+        <li><strong>VFR (variable frame rate) sources</strong>: validate against <code>ffprobe -select_streams v -show_entries frame=pts_time</code> rather than naive frame count diffing.</li>
+        <li><strong>WER threshold is model-dependent</strong> — <code>faster-whisper</code> base/small models will sit near the 12% ceiling on noisy source audio.</li>
+      </ul>
+
+      <h3>Claude Code Implementation Spec</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>claude-code-spec · quality-thresholds.py</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-python"># Task: Implement validation gate framework with numeric thresholds.
+
+# 1. Create src/pipeline/validation/thresholds.py:
+THRESHOLDS = {
+    "sync_drift_ms_max": 80,
+    "render_fps_default_fallback": 30.0,  # used only when no source video exists
+    "frame_drop_pct_max": 0.1,
+    "stt_wer_max": 0.12,
+    "audio_clip_dbfs_max": -0.1,
+    "silence_gap_ms_max": 500,
+    "duration_tolerance_ms": 200,
+}
+# Loaded from pipeline.toml [validation] section, overridable per-job.
+# NOTE: render_fps_min is NOT a fixed constant — it's computed per-job
+# (see get_required_fps below) and stored in that job's checkpoint data.
+
+# 2. Create src/pipeline/validation/validators.py with one function per gate:
+def validate_sync_drift(alignment_data) -> "ValidationResult": ...
+
+def get_required_fps(source_path: "Path | None") -> float:
+    # runs ffprobe on source_path if it's a video; returns its fps.
+    # returns THRESHOLDS["render_fps_default_fallback"] if source_path
+    # is None or not a video (e.g. PPTX-only input).
+    ...
+
+def validate_render_fps(video_path, required_fps: float) -> "ValidationResult":
+    # uses ffprobe on the RENDERED output, compares against required_fps
+    # (the value returned by get_required_fps for this job's source)
+    ...
+
+def validate_stt_wer(hypothesis, reference) -> "ValidationResult": ...  # jiwer lib
+def validate_audio_integrity(audio_path) -> "ValidationResult": ...
+def validate_final_output(video_path, expected_duration) -> "ValidationResult": ...
+
+# 3. Each Stage.validate_output() (from 1.3's Stage protocol) calls the
+#    relevant validator(s) and returns pass/fail with a structured reason —
+#    failed validation sets job_stages.status = 'failed', not 'completed'.
+
+# 4. Add `jiwer` and `ffmpeg-python` to pyproject.toml dependencies.
+
+# 5. Log all validation results (pass and fail) to a
+#    .pipeline/validation_log.jsonl for post-hoc threshold tuning in Phase 2.</code></pre>
+      </div>
+    </section>
+
+    <!-- ===================== 1.7 ===================== -->
+    <section class="item" id="item-1-7">
+      <div class="item-eyebrow">
+        <span class="item-num">1.7</span>
+        <span class="item-status final">✓ FINAL</span>
+      </div>
+      <h2 class="item-title">Testing &amp; Local CI Infrastructure</h2>
+
+      <h3>Concrete Design</h3>
+      <p><strong>Test runner: <code>pytest</code> with <code>pytest-cov</code>. Golden-file regression via small, checked-in fixture media (&lt;1MB each) and deterministic-where-possible comparisons.</strong></p>
+      <ul>
+        <li><strong>Unit tests</strong> (<code>tests/unit/</code>): pure logic, no media I/O — schema validation, checkpoint skip/resume logic, migration functions, threshold comparisons. Fast, run on every save.</li>
+        <li><strong>Integration tests</strong> (<code>tests/integration/</code>): run a real stage against a tiny fixture and assert on structural properties (artifact exists, checksum stable, duration within tolerance) — not byte-for-byte comparison, since TTS/render output is non-deterministic.</li>
+        <li><strong>Golden-file regression</strong> for deterministic stages only (PPTX parsing, alignment timing math): exact-match golden files. For non-deterministic stages (TTS, render), replaced by property-based validation (duration bounds, format correctness, threshold gates from 1.6).</li>
+        <li><strong>Local CI</strong>: no external CI service needed for a solo 5-day local build — a <code>Makefile</code>/<code>justfile</code> target run manually or via pre-commit is sufficient.</li>
+      </ul>
+
+      <h3>Trade-offs &amp; Edge Cases</h3>
+      <ul>
+        <li><strong>Media fixtures bloating the repo</strong>: cap fixtures at &lt;1MB each, document regeneration steps in <code>tests/fixtures/README.md</code>.</li>
+        <li><strong>Flaky non-deterministic assertions</strong>: never assert exact TTS output hashes; assert bounded properties.</li>
+        <li><strong>Over-investing in CI infra on Day 1</strong> is itself a risk — a <code>Makefile</code> + <code>pytest</code> is the entire CI system for Phase 1, full stop.</li>
+      </ul>
+
+      <h3>Claude Code Implementation Spec</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-block-label"><span class="dot"></span>claude-code-spec · testing-ci.txt</span>
+          <button class="copy-btn" onclick="copyBlock(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="language-plaintext">Task: Set up pytest-based test infrastructure with golden-file and property tests.
+
+1. Create pyproject.toml [tool.pytest.ini_options]:
+   testpaths = ["tests"]
+   markers = ["unit", "integration", "slow"]
+
+2. Create tests/fixtures/:
+   - sample_3slide.pptx (small, checked in)
+   - sample_5sec.mp4 (small, checked in)
+   - README.md documenting how each was generated
+
+3. Create tests/golden/ for deterministic-stage golden files:
+   - expected_ingest_output.json (structured PPTX parse result)
+   - expected_alignment_timing.json
+
+4. Create tests/unit/test_checkpointing.py:
+   - test_should_skip_stage_when_checksum_matches
+   - test_should_rerun_stage_when_input_changed
+   - test_retry_exhaustion_marks_job_failed
+
+5. Create tests/unit/test_schema_versioning.py:
+   - test_missing_schema_version_raises
+   - test_migration_chain_applies_in_order
+
+6. Create tests/integration/test_ingest_stage.py:
+   - Runs ingest stage against sample_3slide.pptx, diffs structured output
+     against tests/golden/expected_ingest_output.json (exact match — 
+     deterministic stage)
+
+7. Create tests/integration/test_render_stage.py:
+   - Runs render stage against fixtures, asserts PROPERTY-based checks only:
+     duration within tolerance, fps >= threshold, ffprobe exit 0
+     (NOT exact byte comparison — non-deterministic stage)
+
+8. Create justfile (or Makefile) at repo root:
+   test:        pytest tests/unit -v
+   test-full:   pytest tests -v --cov=src/pipeline
+   check:       ruff check . && mypy src/pipeline && just test
+
+9. Add .pre-commit-config.yaml (optional but recommended) running ruff +
+   mypy + `just test` on commit.</code></pre>
+      </div>
+    </section>
+
+    <hr class="section-rule">
+
+    <!-- ===================== SEQUENCE ===================== -->
+    <section class="item" id="sequence">
+      <h2 class="item-title" style="margin-top:0;">Phase 1 Execution Sequence</h2>
+      <p>The seven design decisions above are finalized; this is the build order for turning them into a working local foundation, and the order in which the GitHub repo will reflect progress.</p>
+
+      <div class="seq-wrap">
+        <div class="seq-row">
+          <div class="seq-marker">1</div>
+          <div class="seq-body">
+            <div class="seq-title">Repo &amp; folder structure scaffold <span class="badge ok">✓ DONE</span></div>
+            <div class="seq-meta"><code>src/pipeline/...</code> · <code>infra/lxd/...</code> · <code>tests/...</code> · <code>.github/</code> — <b>Depends on:</b> — · <b>Relates to:</b> 1.3</div>
+            <div class="seq-meta" style="margin-top:4px;">Built via <code>bootstrap/01_setup_repo.py</code> — idempotent, tested with <code>--dry-run</code> before real execution.</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">2</div>
+          <div class="seq-body">
+            <div class="seq-title">Git init + first commit + push to GitHub <span class="badge ok">✓ DONE</span></div>
+            <div class="seq-meta"><b>Depends on:</b> Step 1</div>
+            <div class="seq-meta" style="margin-top:4px;">Pushed to <code>github.com/Akshat-MS/media-pipeline</code> over SSH (switched from HTTPS after GitHub rejected password auth).</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">3</div>
+          <div class="seq-body">
+            <div class="seq-title">State store schema <span class="badge ok">✓ DONE</span></div>
+            <div class="seq-meta"><code>state/schema.sql</code>, <code>db.py</code>, <code>repository.py</code>, migration 0001 — pure host-side, no containers needed — <b>Depends on:</b> Step 1 · <b>Relates to:</b> 1.2</div>
+            <div class="seq-meta" style="margin-top:4px;"><b>Learned during build:</b> added <code>review_mode</code> (on <code>jobs</code>) and <code>review_status</code> (on <code>job_stages</code>) columns, not in the original 1.2 spec — needed to support choosing <code>auto</code> vs <code>manual</code> review per job at submission time. Full lifecycle tested end-to-end against real SQLite, including checksum-based edit detection and retry/attempt-count tracking.</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">4</div>
+          <div class="seq-body">
+            <div class="seq-title">Create the 3 LXD containers <span class="badge ok">✓ DONE</span></div>
+            <div class="seq-meta"><code>pipeline-structure</code>, <code>pipeline-speech</code>, <code>pipeline-render</code> + bind-mount <code>/workdir</code> &amp; <code>/resources</code> — <b>Depends on:</b> Step 1 · <b>Relates to:</b> 1.3</div>
+            <div class="seq-meta" style="margin-top:4px;"><b>Learned during build:</b> containers named/grouped by <em>computational</em> footprint, not by pipeline task — confirmed CPU-only machine (no NVIDIA GPU), so no GPU passthrough anywhere. Resource limits sized to the real machine: <code>pipeline-structure</code> 2 CPU/2GB, <code>pipeline-speech</code> 3 CPU/4GB (heaviest — Whisper CPU inference), <code>pipeline-render</code> 2 CPU/2GB, 8GB disk each. Hit and fixed a real bug: the host's <code>default</code> LXD profile has no network device, so each profile now defines its own <code>eth0</code> explicitly rather than relying on <code>--profile default</code>. Added an explicit per-container internet-connectivity check (using bash's <code>/dev/tcp</code>, not <code>curl</code> — a bare image doesn't have <code>curl</code> yet) before attempting <code>apt-get</code>, so a network problem fails fast with a clear message.</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">5</div>
+          <div class="seq-body">
+            <div class="seq-title">Install per-container dependencies <span class="badge warn">↻ DEFERRED — INCREMENTAL</span></div>
+            <div class="seq-meta">ffprobe/python-pptx; whisper (CPU); hw-accel ffmpeg — <b>Depends on:</b> Step 4 · <b>Relates to:</b> 1.3</div>
+            <div class="seq-meta" style="margin-top:4px;"><b>Decision made during build:</b> rather than installing every module's dependencies upfront, each container only gets baseline tooling now (<code>python3</code>, <code>pip</code>, <code>build-essential</code>, <code>curl</code>) — real module-specific packages are installed one at a time, only once we're actually implementing the module that needs them. This avoids guessing at a dependency list before real module boundaries are proven.</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">6</div>
+          <div class="seq-body">
+            <div class="seq-title">Stage contract skeleton <span class="badge ok">✓ DONE</span></div>
+            <div class="seq-meta"><code>core/stage_protocol.py</code>, <code>core/manifest.py</code>, <code>core/registry.py</code>, <code>models/schemas.py</code> — <b>Depends on:</b> Steps 1, 4 · <b>Relates to:</b> 1.3</div>
+            <div class="seq-meta" style="margin-top:4px;"><b>Learned during build:</b> resolved an overlap from the original folder-structure sketch — <code>StageManifest</code>/<code>Artifact</code> live in <code>core/manifest.py</code> (tightly bound to the <code>Stage</code> protocol), <code>models/schemas.py</code> narrowed to just <code>JobConfig</code>. <code>core/registry.py</code> is intentionally empty (<code>STAGE_ORDER</code>, <code>STAGE_CONTAINER_MAP</code> both start as <code>{}</code>/<code>[]</code>) — real stage names are registered one at a time via <code>register_stage()</code> as modules are actually built, never guessed upfront. Verified the <code>Stage</code> Protocol's structural typing works correctly (a plain class satisfies it with zero inheritance) and that pydantic validation correctly rejects malformed input.</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">7</div>
+          <div class="seq-body">
+            <div class="seq-title">Orchestrator skeleton <span class="badge pending">☐ NEXT</span></div>
+            <div class="seq-meta"><code>orchestrator.py</code>, <code>ContainerStageRunner</code>, checkpoint/resume logic — <b>Depends on:</b> Steps 3, 6 · <b>Relates to:</b> 1.3, 1.4</div>
+            <div class="seq-meta" style="margin-top:4px;"><b>Known going in:</b> the dependency graph is not strictly linear — Sequence Mapping and Resource Library matching both need <em>both</em> Visual Deconstruction's and Transcript Alignment's output (a fork/join), not a single chain. The orchestrator must express that, not just iterate a flat <code>STAGE_ORDER</code> list.</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">8</div>
+          <div class="seq-body">
+            <div class="seq-title">Schema versioning envelope + migration framework <span class="badge pending">☐ PENDING</span></div>
+            <div class="seq-meta"><code>models/envelope.py</code>, <code>migrations.py</code> — <b>Depends on:</b> Step 6 · <b>Relates to:</b> 1.5</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">9</div>
+          <div class="seq-body">
+            <div class="seq-title">Validation/threshold framework <span class="badge pending">☐ PENDING</span></div>
+            <div class="seq-meta"><code>validation/thresholds.py</code>, <code>validators.py</code> — <b>Depends on:</b> Steps 6, 7 · <b>Relates to:</b> 1.6</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">10</div>
+          <div class="seq-body">
+            <div class="seq-title">Test scaffold + fixtures + Makefile/justfile <span class="badge pending">☐ PENDING</span></div>
+            <div class="seq-meta"><b>Depends on:</b> Steps 6, 7, 8, 9 · <b>Relates to:</b> 1.7</div>
+          </div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-marker">11</div>
+          <div class="seq-body">
+            <div class="seq-title">Commit + push full Phase 1 foundation to GitHub <span class="badge pending">☐ PENDING</span></div>
+            <div class="seq-meta"><b>Depends on:</b> all above</div>
+          </div>
+        </div>
+      </div>
+
+      <blockquote><p><strong>Note on GitHub sync</strong>: steps 2 and 11 bookend the day — the empty skeleton is pushed first so every subsequent step is a reviewable diff, and the final push closes out Phase 1 with a complete, working foundation in the remote. In practice, commits are happening after each completed step (1, 3, 4, 6 so far) rather than being batched — smaller, reviewable diffs tied to one task each.</p></blockquote>
+    </section>
+
+    <hr class="section-rule">
+
+    <!-- ===================== SUMMARY ===================== -->
+    <section class="item" id="summary">
+      <h2 class="item-title" style="margin-top:0;">Phase 1 Summary Table — Final</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:16%">Item</th><th style="width:38%">Decision</th><th style="width:24%">Design Status</th><th>Completed</th></tr></thead>
+          <tbody>
+            <tr><td><strong>1.1</strong> Language/Runtime</td><td>Python 3.12, asyncio + multiprocessing</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge ok">✓ DONE</span> — pyproject.toml scaffolded (Step 1)</td></tr>
+            <tr><td><strong>1.2</strong> State Store</td><td>SQLite (WAL mode), repository pattern, host-side only</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge ok">✓ DONE</span> — schema, db.py, repository.py built &amp; tested (Step 3)</td></tr>
+            <tr><td><strong>1.3</strong> Architecture</td><td>JSON-contract stages, 3 dependency-isolated LXD containers, host-side orchestrator</td><td><span class="badge warn">↻ REVISED v3</span></td><td><span class="badge warn">↻ IN PROGRESS</span> — containers live (Step 4), stage contract built (Step 6); orchestrator + real modules still pending (Step 7+)</td></tr>
+            <tr><td><strong>1.4</strong> Resumability</td><td>Per-stage checkpointing = per-container-invocation checkpointing</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge warn">↻ PARTIAL</span> — state-store support built &amp; tested (checksum-based edit detection, retry tracking); orchestrator logic not yet built (Step 7)</td></tr>
+            <tr><td><strong>1.5</strong> Schema Versioning</td><td>Strict semver, envelope, read-time migrations</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge pending">☐ NOT STARTED</span> — Step 8</td></tr>
+            <tr><td><strong>1.6</strong> Quality Thresholds</td><td>80ms sync drift · adaptive fps · 12% WER · integrity checks</td><td><span class="badge warn">↻ REVISED</span></td><td><span class="badge pending">☐ NOT STARTED</span> — Step 9</td></tr>
+            <tr><td><strong>1.7</strong> Testing/CI</td><td>pytest + golden files + property tests, no external CI</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge pending">☐ NOT STARTED</span> — Step 10</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary-note">
+        <strong>Legend:</strong> <em>Design Status</em> = whether the decision/spec itself is locked (all seven are Final as of this document). <em>Completed</em> = whether it has actually been built/implemented yet (containers created, code scaffolded, pushed to GitHub) — update this column as execution sequence steps 1–11 are completed, so this table stays the single source of truth for both "what we decided" and "what's actually done."
+      </div>
+
+      <p style="margin-top:20px;"><strong>Deferred to next working session:</strong> actual LXD container creation scripts (3 containers, named per the map in 1.3), workspace/repo folder scaffolding, and the concrete CI/quality-check tooling install — all to be built next, following the parameterized-script pattern already in your toolkit rather than from scratch.</p>
+    </section>
+
+    <footer>
+      All seven decisions are locked to the single constraint governing this build: maximum solo velocity on one machine within 5 days, deferring every distributed/multi-tenant/heavy-infra concern to a hypothetical future phase this build does not need to anticipate today.
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  hljs.highlightAll();
+
+  function copyBlock(btn){
+    const pre = btn.closest('.code-block').querySelector('pre code');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.innerHTML;
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = original;
+      }, 1800);
+    });
+  }
+</script>
+
+</body>
+</html>
