@@ -92,25 +92,25 @@ def validate_sync_drift(
     )
 
 
-def get_required_fps(
-    source_fps: float | None, thresholds: dict[str, float] = DEFAULT_THRESHOLDS
-) -> float:
+def validate_render_fps(
+    measured_fps: float, thresholds: dict[str, float] = DEFAULT_THRESHOLDS
+) -> ValidationResult:
     """
-    Adaptive rule: rendered output must match/exceed the source video's own
-    fps. Falls back to a fixed default only when there's no source video to
-    inherit from (pure PPTX input).
+    Fixed delivery standard (revised — supersedes the earlier adaptive
+    "inherit source fps" rule): output must land within [render_fps_min,
+    render_fps_max] regardless of the source's own frame rate. The
+    pipeline's job is to enhance quality to a consistent delivery
+    standard, not simply pass through whatever the source happened to be
+    — a 60fps source gets downsampled, a 15fps source gets upsampled,
+    both to land in range.
     """
-    if source_fps is not None:
-        return source_fps
-    return thresholds["render_fps_fallback"]
-
-
-def validate_render_fps(measured_fps: float, required_fps: float) -> ValidationResult:
-    passed = measured_fps >= required_fps
+    fps_min = thresholds["render_fps_min"]
+    fps_max = thresholds["render_fps_max"]
+    passed = fps_min <= measured_fps <= fps_max
     return ValidationResult(
         "render_fps", passed, is_gate("render_fps"),
-        measured_fps, required_fps,
-        f"measured {measured_fps}fps, required >= {required_fps}fps",
+        measured_fps, f"{fps_min}-{fps_max}",
+        f"measured {measured_fps}fps, required {fps_min}-{fps_max}fps",
     )
 
 
@@ -135,6 +135,84 @@ def validate_output_integrity(ffprobe_exit_code: int, file_size_bytes: int) -> V
         "output_integrity", passed, is_gate("output_integrity"),
         f"exit={ffprobe_exit_code}, size={file_size_bytes}B", "exit=0, size>0B",
         "file is valid and playable" if passed else "ffprobe failed or file is empty/corrupt",
+    )
+
+
+# ── Delivered-output standard validators (Image 1) ──────────────────────
+# All gates — the pipeline enhances quality, so these are non-negotiable
+# delivery requirements, not advisory suggestions.
+
+def validate_output_resolution(
+    measured_width: int, measured_height: int,
+    thresholds: dict[str, float] = DEFAULT_THRESHOLDS,
+) -> ValidationResult:
+    target_w = thresholds["output_resolution_width"]
+    target_h = thresholds["output_resolution_height"]
+    passed = measured_width == target_w and measured_height == target_h
+    return ValidationResult(
+        "output_resolution", passed, is_gate("output_resolution"),
+        f"{measured_width}x{measured_height}", f"{target_w}x{target_h}",
+        f"measured {measured_width}x{measured_height}, required {target_w}x{target_h}",
+    )
+
+
+def validate_video_codec(
+    measured_codec: str, thresholds: dict[str, float] = DEFAULT_THRESHOLDS
+) -> ValidationResult:
+    target = thresholds["video_codec"]
+    passed = measured_codec.strip().lower() == str(target).strip().lower()
+    return ValidationResult(
+        "video_codec", passed, is_gate("video_codec"),
+        measured_codec, target,
+        f"measured {measured_codec!r}, required {target!r}",
+    )
+
+
+def validate_video_bitrate(
+    measured_mbps: float, thresholds: dict[str, float] = DEFAULT_THRESHOLDS
+) -> ValidationResult:
+    lo, hi = thresholds["video_bitrate_mbps_min"], thresholds["video_bitrate_mbps_max"]
+    passed = lo <= measured_mbps <= hi
+    return ValidationResult(
+        "video_bitrate", passed, is_gate("video_bitrate"),
+        measured_mbps, f"{lo}-{hi}",
+        f"measured {measured_mbps}Mbps, required {lo}-{hi}Mbps",
+    )
+
+
+def validate_audio_channels(
+    measured_channels: str, thresholds: dict[str, float] = DEFAULT_THRESHOLDS
+) -> ValidationResult:
+    target = thresholds["audio_channels"]
+    passed = measured_channels.strip().lower() == str(target).strip().lower()
+    return ValidationResult(
+        "audio_channels", passed, is_gate("audio_channels"),
+        measured_channels, target,
+        f"measured {measured_channels!r}, required {target!r}",
+    )
+
+
+def validate_audio_sample_rate(
+    measured_hz: int, thresholds: dict[str, float] = DEFAULT_THRESHOLDS
+) -> ValidationResult:
+    target = thresholds["audio_sample_rate_hz"]
+    passed = measured_hz == target
+    return ValidationResult(
+        "audio_sample_rate", passed, is_gate("audio_sample_rate"),
+        measured_hz, target,
+        f"measured {measured_hz}Hz, required {target}Hz",
+    )
+
+
+def validate_audio_bitrate(
+    measured_kbps: float, thresholds: dict[str, float] = DEFAULT_THRESHOLDS
+) -> ValidationResult:
+    lo, hi = thresholds["audio_bitrate_kbps_min"], thresholds["audio_bitrate_kbps_max"]
+    passed = lo <= measured_kbps <= hi
+    return ValidationResult(
+        "audio_bitrate", passed, is_gate("audio_bitrate"),
+        measured_kbps, f"{lo}-{hi}",
+        f"measured {measured_kbps}kbps, required {lo}-{hi}kbps",
     )
 
 

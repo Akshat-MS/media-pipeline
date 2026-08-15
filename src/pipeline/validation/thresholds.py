@@ -17,14 +17,35 @@ from *how they get configured*.
 
 from __future__ import annotations
 
-DEFAULT_THRESHOLDS: dict[str, float] = {
+from typing import Union
+
+ThresholdValue = Union[float, int, str]
+
+DEFAULT_THRESHOLDS: dict[str, ThresholdValue] = {
     "audio_loudness_target_lufs": -16.0,     # EBU R128 spoken-content standard
     "audio_peak_ceiling_dbfs": -1.0,
     "stt_wer_max": 0.12,
     "sequence_mapping_coverage_min": 0.90,   # placeholder — untuned, see note below
     "sync_drift_ms_max": 80,
-    "render_fps_fallback": 30.0,             # used only when there's no source video to inherit fps from
     "duration_tolerance_ms": 200,
+
+    # ── Delivered output standard (revised — supersedes the earlier
+    #    adaptive-fps rule; see 1.6 REVISED v2 in the ADR). This is a
+    #    fixed delivery-quality standard, not something that varies by
+    #    source input: the pipeline's job is to ENHANCE video quality,
+    #    so output must always meet this bar regardless of what was
+    #    supplied, never just inherit/pass through a lower source spec.
+    "output_resolution_width": 1920,
+    "output_resolution_height": 1080,
+    "render_fps_min": 24.0,
+    "render_fps_max": 30.0,
+    "video_codec": "H.264 High Profile",
+    "video_bitrate_mbps_min": 8.0,
+    "video_bitrate_mbps_max": 12.0,
+    "audio_channels": "stereo",
+    "audio_sample_rate_hz": 48000,
+    "audio_bitrate_kbps_min": 192,
+    "audio_bitrate_kbps_max": 256,
 }
 # NOTE on sequence_mapping_coverage_min: no real value for this existed in
 # any prior discussion — 90% is a reasonable-sounding placeholder, not a
@@ -33,7 +54,7 @@ DEFAULT_THRESHOLDS: dict[str, float] = {
 # and real coverage numbers exist to tune against.
 
 
-def load_thresholds(overrides: dict[str, float] | None = None) -> dict[str, float]:
+def load_thresholds(overrides: dict[str, ThresholdValue] | None = None) -> dict[str, ThresholdValue]:
     """Merge overrides onto DEFAULT_THRESHOLDS. Never mutates the defaults."""
     merged = dict(DEFAULT_THRESHOLDS)
     if overrides:
@@ -60,6 +81,15 @@ CHECKS: dict[str, dict[str, str]] = {
     "render_fps":                {"type": "gate",     "stage": "video_compose"},
     "duration_match":            {"type": "gate",     "stage": "video_compose"},
     "output_integrity":          {"type": "gate",     "stage": "video_compose"},
+    # Added following the delivered-output standard (Image 1) — all
+    # gates: the pipeline's job is to enhance quality, so these are
+    # non-negotiable delivery requirements, not advisory suggestions.
+    "output_resolution":         {"type": "gate",     "stage": "video_compose"},
+    "video_codec":               {"type": "gate",     "stage": "video_compose"},
+    "video_bitrate":             {"type": "gate",     "stage": "video_compose"},
+    "audio_channels":            {"type": "gate",     "stage": "video_compose"},
+    "audio_sample_rate":         {"type": "gate",     "stage": "video_compose"},
+    "audio_bitrate":             {"type": "gate",     "stage": "video_compose"},
 }
 
 

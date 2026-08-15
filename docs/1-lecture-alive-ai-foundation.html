@@ -1070,7 +1070,7 @@ def migrate_to_latest(schema_name: str, payload: dict) -> dict:
         <span class="item-status revised">↻ REVISED</span>
       </div>
       <h2 class="item-title">Quality &amp; Validation Thresholds</h2>
-      <div class="item-note">FPS rule revised to adaptive; all other thresholds confirmed.</div>
+      <div class="item-note"><strong>REVISED v2</strong> (post-Phase-1, during Phase 2 kickoff): fixed render fps range (24-30fps) REPLACES the earlier adaptive "inherit source fps" rule — the pipeline enhances quality to a standard, it does not just pass through whatever the source happened to be. Full delivered-output spec added (resolution, codec, bitrate, audio format) — all gates, all implemented and tested in <code>validation/thresholds.py</code> + <code>validators.py</code>.</div>
 
       <h3>Concrete Design</h3>
       <p>Numeric, non-negotiable gates enforced automatically after each relevant stage — a stage that fails validation does not get marked <code>completed</code>, blocking downstream stages per the resumability design in 1.4.</p>
@@ -1079,32 +1079,43 @@ def migrate_to_latest(schema_name: str, payload: dict) -> dict:
         <table>
           <thead><tr><th style="width:26%">Metric</th><th style="width:38%">Threshold</th><th>Enforced After Stage</th></tr></thead>
           <tbody>
-            <tr><td><strong>Audio/video sync drift</strong></td><td>≤ <strong>80&nbsp;ms</strong> absolute offset at any alignment checkpoint</td><td>Align, Mux</td></tr>
-            <tr><td><strong>Render output frame rate</strong></td><td><span class="badge warn">ADAPTIVE</span> ≥ source <code>.mp4</code>'s original fps (via <code>ffprobe</code>); default <strong>30fps</strong> if source is PPTX-only</td><td>Render</td></tr>
-            <tr><td><strong>STT word error rate (WER)</strong></td><td>≤ <strong>12%</strong> on the reference sample set</td><td>Ingest</td></tr>
-            <tr><td><strong>Narration/TTS audio integrity</strong></td><td>0 clipped samples (peak &lt; -0.1 dBFS), no silence gaps &gt; <strong>500ms</strong> unless scripted</td><td>Narrate</td></tr>
-            <tr><td><strong>Final render output validation</strong></td><td><code>ffprobe</code> exit code 0, duration within <strong>±200ms</strong> of expected, no corrupt/zero-byte output</td><td>Mux</td></tr>
+            <tr><td><strong>Audio/video sync drift</strong></td><td>≤ <strong>80&nbsp;ms</strong> absolute offset at any alignment checkpoint</td><td>Align, Video Compose</td></tr>
+            <tr><td><strong>Render output frame rate</strong></td><td><span class="badge ok">FIXED</span> <strong>24-30 fps</strong> — output is normalized into this range regardless of source fps (a 60fps source is downsampled, a 15fps source is upsampled)</td><td>Video Compose</td></tr>
+            <tr><td><strong>Output resolution</strong></td><td><strong>1920×1080</strong>, exact match</td><td>Video Compose</td></tr>
+            <tr><td><strong>Video codec/profile</strong></td><td><strong>H.264 High Profile</strong></td><td>Video Compose</td></tr>
+            <tr><td><strong>Video bitrate</strong></td><td><strong>8-12 Mbps</strong></td><td>Video Compose</td></tr>
+            <tr><td><strong>Audio channels</strong></td><td><strong>Stereo</strong></td><td>Video Compose</td></tr>
+            <tr><td><strong>Audio sample rate</strong></td><td><strong>48 kHz</strong>, exact match</td><td>Video Compose</td></tr>
+            <tr><td><strong>Audio bitrate</strong></td><td><strong>192-256 kbps</strong></td><td>Video Compose</td></tr>
+            <tr><td><strong>Audio mean volume</strong></td><td>≈ <strong>-16 LUFS</strong> integrated (EBU R128, ±1.0 tolerance)</td><td>Audio Preprocessing</td></tr>
+            <tr><td><strong>Audio peak ceiling</strong></td><td>≤ <strong>-1.0 dBFS</strong> true peak</td><td>Audio Preprocessing</td></tr>
+            <tr><td><strong>STT word error rate (WER)</strong></td><td><span class="badge warn">ADVISORY</span> ≤ <strong>12%</strong> on the reference sample set</td><td>Transcript Alignment</td></tr>
+            <tr><td><strong>Sequence Mapping coverage</strong></td><td><span class="badge warn">ADVISORY</span> ≥ <strong>90%</strong> <em>(untuned placeholder)</em> of manifest elements mapped</td><td>Sequence Mapping</td></tr>
+            <tr><td><strong>Final output validation</strong></td><td><code>ffprobe</code> exit code 0, duration within <strong>±200ms</strong> of expected, no corrupt/zero-byte output</td><td>Video Compose</td></tr>
           </tbody>
         </table>
       </div>
 
       <p style="margin-top:22px;"><strong>What these mean, in plain terms:</strong></p>
       <ul>
-        <li><strong>Audio/video sync drift</strong> — the time gap between when something is <em>said</em> in the narration and when the matching visual appears on screen (e.g., narration says "as shown here" but the relevant slide/chart appears 200ms later). Comes from narration audio and slide-timing being generated on separate tracks and not perfectly aligned, or clock drift accumulating during muxing. Human perception starts noticing desync above roughly 100ms, so 80ms is the outer edge of "acceptable," not a target to hover near.</li>
-        <li><strong>Render output frame rate — adaptive rule</strong>: rather than a fixed floor, the pipeline must inherit the input's frame rate, never downgrade it. Run <code>ffprobe</code> on the source <code>.mp4</code> to read its fps; rendered output must be ≥ that value. No source video (pure PPTX input) → fall back to 30fps. This avoids silently producing lower quality than what was provided.</li>
-        <li><strong>STT WER</strong> — unchanged, 12% ceiling; broadcast-grade STT is closer to 5%, but 12% is realistic for local Whisper-class models without fine-tuning, and sufficient for driving alignment.</li>
-        <li><strong>TTS audio integrity</strong> — two checks bundled: <strong>clipping</strong> (digital distortion above 0 dBFS, sounds harsh/crackly — the -0.1 dBFS threshold keeps a safety margin), and <strong>silence gaps</strong> (unscripted dead air from a glitchy TTS pause — past 500ms reads as broken audio).</li>
+        <li><strong>Audio/video sync drift</strong> — the time gap between when something is <em>said</em> in the narration and when the matching visual appears on screen. Human perception starts noticing desync above roughly 100ms, so 80ms is the outer edge of "acceptable," not a target to hover near.</li>
+        <li><strong>Render output frame rate — fixed standard (revised)</strong>: the pipeline's job is to <em>enhance</em> video quality to a consistent delivery bar, so output is normalized into 24-30fps regardless of what the source provided — never a simple pass-through. This directly replaces the earlier "always ≥ source fps" adaptive rule, which would have let a low-quality source silently stay low-quality.</li>
+        <li><strong>Delivered-output standard</strong> (resolution, codec, bitrate, audio format) — sourced directly from a technical spec table the team defined for what a finished, enhanced lecture video should look like. All treated as hard gates, not suggestions, since they define what "enhanced" actually means for this product.</li>
+        <li><strong>STT WER / Sequence Mapping coverage</strong> — both advisory: logged, but don't block a stage from completing, since blocking on model accuracy while STT/mapping logic is still being tuned would be counterproductive. A failing gate always blocks; even every advisory failing simultaneously never does.</li>
       </ul>
 
-      <blockquote><p>These are <strong>Day 1 starting thresholds</strong>, calibrated to be strict enough to catch real defects but loose enough not to block a 5-day build on marginal cases — meant to be tuned in Phase 2 against real fixture data, not treated as immutable law.</p></blockquote>
+      <blockquote><p>Gate values are calibrated to catch real defects without blocking early progress on marginal cases — the two advisory thresholds in particular are meant to be tuned once real modules produce real accuracy numbers to tune against, not treated as immutable law. The delivered-output spec (resolution/codec/bitrate/audio format), by contrast, is a fixed product standard, not something expected to loosen over time.</p></blockquote>
 
       <h3>Trade-offs &amp; Edge Cases</h3>
       <ul>
-        <li><strong>80ms sync drift is a compromise</strong>: tightening to broadcast-grade (±40ms) on Day 1 will burn debugging time the schedule doesn't have.</li>
-        <li><strong>Adaptive fps requires reading source metadata before rendering</strong> — computed per-job and stored alongside that job's checkpoint data.</li>
+        <li><strong>80ms sync drift is a compromise</strong>: tightening to broadcast-grade (±40ms) will cost real debugging time once Sequence Mapping/Video Compose are being built.</li>
+        <li><strong>Fixed fps range means real transcoding work, not just measurement</strong> — Video Compose must actually normalize a source's native fps into range (interpolate up, downsample down), not just check a number after the fact. This is now a real requirement on that module's design, not only a validation concern.</li>
         <li><strong>VFR (variable frame rate) sources</strong>: validate against <code>ffprobe -select_streams v -show_entries frame=pts_time</code> rather than naive frame count diffing.</li>
-        <li><strong>WER threshold is model-dependent</strong> — <code>faster-whisper</code> base/small models will sit near the 12% ceiling on noisy source audio.</li>
+        <li><strong>WER threshold is model-dependent</strong> — <code>faster-whisper</code> base/small models will sit near the 12% ceiling on noisy source audio; this is advisory precisely because of that variability.</li>
+        <li><strong>Sequence Mapping coverage threshold (90%) is an untuned placeholder</strong> — no real number existed for this anywhere prior; flagged honestly in the code rather than presented as settled.</li>
       </ul>
+
+      <blockquote><p><strong>See also:</strong> <code>docs/visual_grammar_requirements.md</code> — a standing reference for <em>generation-time</em> behavioral requirements (camera movement, animation layering, narration-bound pacing, content coverage) that Phase 4 (Sequence Mapping) and Phase 5 (Rendering &amp; Composition) design work must account for. Distinct from this section: 1.6 validates the output file after the fact; that document shapes how content gets generated in the first place.</p></blockquote>
 
       <h3>Claude Code Implementation Spec</h3>
       <div class="code-block">
@@ -1115,48 +1126,73 @@ def migrate_to_latest(schema_name: str, payload: dict) -> dict:
             Copy
           </button>
         </div>
-        <pre><code class="language-python"># Task: Implement validation gate framework with numeric thresholds.
+        <pre><code class="language-python"># Task 9 (DONE — actually built and tested, 87 passing tests):
 
-# 1. Create src/pipeline/validation/thresholds.py:
-THRESHOLDS = {
-    "sync_drift_ms_max": 80,
-    "render_fps_default_fallback": 30.0,  # used only when no source video exists
-    "frame_drop_pct_max": 0.1,
+# src/pipeline/validation/thresholds.py
+DEFAULT_THRESHOLDS = {
+    "audio_loudness_target_lufs": -16.0,
+    "audio_peak_ceiling_dbfs": -1.0,
     "stt_wer_max": 0.12,
-    "audio_clip_dbfs_max": -0.1,
-    "silence_gap_ms_max": 500,
+    "sequence_mapping_coverage_min": 0.90,   # untuned placeholder
+    "sync_drift_ms_max": 80,
     "duration_tolerance_ms": 200,
+    # Delivered-output standard (REVISED — replaces the old adaptive-fps
+    # rule; sourced from the team's output-quality spec table):
+    "output_resolution_width": 1920,
+    "output_resolution_height": 1080,
+    "render_fps_min": 24.0,
+    "render_fps_max": 30.0,
+    "video_codec": "H.264 High Profile",
+    "video_bitrate_mbps_min": 8.0,
+    "video_bitrate_mbps_max": 12.0,
+    "audio_channels": "stereo",
+    "audio_sample_rate_hz": 48000,
+    "audio_bitrate_kbps_min": 192,
+    "audio_bitrate_kbps_max": 256,
 }
-# Loaded from pipeline.toml [validation] section, overridable per-job.
-# NOTE: render_fps_min is NOT a fixed constant — it's computed per-job
-# (see get_required_fps below) and stored in that job's checkpoint data.
 
-# 2. Create src/pipeline/validation/validators.py with one function per gate:
-def validate_sync_drift(alignment_data) -> "ValidationResult": ...
-
-def get_required_fps(source_path: "Path | None") -> float:
-    # runs ffprobe on source_path if it's a video; returns its fps.
-    # returns THRESHOLDS["render_fps_default_fallback"] if source_path
-    # is None or not a video (e.g. PPTX-only input).
+def load_thresholds(overrides: dict | None = None) -> dict:
+    # merges overrides onto DEFAULT_THRESHOLDS, rejects unknown keys
     ...
 
-def validate_render_fps(video_path, required_fps: float) -> "ValidationResult":
-    # uses ffprobe on the RENDERED output, compares against required_fps
-    # (the value returned by get_required_fps for this job's source)
-    ...
+CHECKS = {
+    "audio_loudness":            {"type": "gate",     "stage": "audio_preprocessing"},
+    "audio_peak_ceiling":        {"type": "gate",     "stage": "audio_preprocessing"},
+    "stt_wer":                   {"type": "advisory", "stage": "transcript_alignment"},
+    "sequence_mapping_coverage": {"type": "advisory", "stage": "sequence_mapping"},
+    "sync_drift":                {"type": "gate",     "stage": "video_compose"},
+    "render_fps":                {"type": "gate",     "stage": "video_compose"},
+    "duration_match":            {"type": "gate",     "stage": "video_compose"},
+    "output_integrity":          {"type": "gate",     "stage": "video_compose"},
+    "output_resolution":         {"type": "gate",     "stage": "video_compose"},
+    "video_codec":               {"type": "gate",     "stage": "video_compose"},
+    "video_bitrate":             {"type": "gate",     "stage": "video_compose"},
+    "audio_channels":            {"type": "gate",     "stage": "video_compose"},
+    "audio_sample_rate":         {"type": "gate",     "stage": "video_compose"},
+    "audio_bitrate":             {"type": "gate",     "stage": "video_compose"},
+}
 
-def validate_stt_wer(hypothesis, reference) -> "ValidationResult": ...  # jiwer lib
-def validate_audio_integrity(audio_path) -> "ValidationResult": ...
-def validate_final_output(video_path, expected_duration) -> "ValidationResult": ...
+# src/pipeline/validation/validators.py — one function per check, e.g.:
+def validate_render_fps(measured_fps: float, thresholds=DEFAULT_THRESHOLDS):
+    # FIXED range check (revised) — normalizes into [24, 30], no longer
+    # inherits/passes through the source's own fps
+    fps_min, fps_max = thresholds["render_fps_min"], thresholds["render_fps_max"]
+    passed = fps_min <= measured_fps <= fps_max
+    return ValidationResult("render_fps", passed, is_gate("render_fps"), ...)
 
-# 3. Each Stage.validate_output() (from 1.3's Stage protocol) calls the
-#    relevant validator(s) and returns pass/fail with a structured reason —
-#    failed validation sets job_stages.status = 'failed', not 'completed'.
+# ...plus validate_output_resolution, validate_video_codec,
+# validate_video_bitrate, validate_audio_channels,
+# validate_audio_sample_rate, validate_audio_bitrate — same pattern.
 
-# 4. Add `jiwer` and `ffmpeg-python` to pyproject.toml dependencies.
+def all_gates_passed(results: list) -> bool:
+    # True only if every GATE-type result passed; advisory failures
+    # never affect this, even if every advisory fails simultaneously.
+    return all(r.passed for r in results if r.is_gate)
 
-# 5. Log all validation results (pass and fail) to a
-#    .pipeline/validation_log.jsonl for post-hoc threshold tuning in Phase 2.</code></pre>
+# Each Stage.validate_output() (from 1.3's Stage protocol) calls the
+# relevant validator(s) and returns pass/fail with a structured reason —
+# failed validation sets job_stages.status = 'failed', not 'completed'.
+# Real dependencies used: pydantic, jiwer (WER), ffmpeg-python.</code></pre>
       </div>
     </section>
 
@@ -1349,7 +1385,7 @@ def validate_final_output(video_path, expected_duration) -> "ValidationResult": 
             <tr><td><strong>1.3</strong> Architecture</td><td>JSON-contract stages, 3 dependency-isolated LXD containers, host-side orchestrator</td><td><span class="badge warn">↻ REVISED v3</span></td><td><span class="badge warn">↻ IN PROGRESS</span> — containers live (Step 4), stage contract built (Step 6); orchestrator + real modules still pending (Step 7+)</td></tr>
             <tr><td><strong>1.4</strong> Resumability</td><td>Per-stage checkpointing = per-container-invocation checkpointing</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge warn">↻ PARTIAL</span> — state-store support built &amp; tested (checksum-based edit detection, retry tracking); orchestrator logic not yet built (Step 7)</td></tr>
             <tr><td><strong>1.5</strong> Schema Versioning</td><td>Strict semver, envelope, read-time migrations</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge pending">☐ NOT STARTED</span> — Step 8</td></tr>
-            <tr><td><strong>1.6</strong> Quality Thresholds</td><td>80ms sync drift · adaptive fps · 12% WER · integrity checks</td><td><span class="badge warn">↻ REVISED</span></td><td><span class="badge pending">☐ NOT STARTED</span> — Step 9</td></tr>
+            <tr><td><strong>1.6</strong> Quality Thresholds</td><td>Fixed 24-30fps + full delivered-output spec · 80ms sync drift · 12% WER (advisory) · integrity checks</td><td><span class="badge warn">↻ REVISED v2</span></td><td><span class="badge ok">✓ DONE</span> — Step 9, 87 passing tests</td></tr>
             <tr><td><strong>1.7</strong> Testing/CI</td><td>pytest + golden files + property tests, no external CI</td><td><span class="badge ok">✓ FINAL</span></td><td><span class="badge pending">☐ NOT STARTED</span> — Step 10</td></tr>
           </tbody>
         </table>
