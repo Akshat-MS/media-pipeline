@@ -1,0 +1,388 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_type": "global_style_contract",
+  "generated_at": "2026-08-16T00:00:00Z",
+  "source": "layer_1_manual",
+  "payload": {
+    "version": "v1",
+    "theme_selected": null,
+    "canvas": {
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "safe_margin": {
+        "top": 96,
+        "right": 120,
+        "bottom": 52,
+        "left": 120
+      },
+      "spacing_base_unit_px": 4,
+      "grid": {
+        "columns": 12,
+        "column_width_px": 118,
+        "rows": 8,
+        "row_height_px": 90,
+        "gutter_px": 24,
+        "content_area": {
+          "width": 1680,
+          "height": 888
+        },
+        "col_origin_fn": "120 + (n-1)*142",
+        "row_origin_fn": "96 + (n-1)*114",
+        "span_fn": "k*118 + (k-1)*24",
+        "note": "invisible coordinate system — Layer 3 selects cells, does not invent pixel positions"
+      },
+      "satisfies": [
+        "TGT-001",
+        "TGT-002"
+      ]
+    },
+    "type_scale": {
+      "base_px": 31,
+      "ratio": 1.25
+    },
+    "themes": {
+      "navy": {
+        "background": {
+          "base_color": "#16234A",
+          "accents": [
+            "radial-gradient(circle at 12% 6%, rgba(120,150,220,0.28) 0%, transparent 22%)",
+            "radial-gradient(circle at 78% 78%, rgba(90,120,200,0.30) 0%, transparent 30%)"
+          ]
+        },
+        "text_secondary": "#C6D0EC",
+        "text_tertiary": "#9FB0DA",
+        "eyebrow": "#8FA3D9",
+        "accent_marker": "#7C9BE8",
+        "measured_body_contrast": 9.93
+      },
+      "blue": {
+        "background": {
+          "base_color": "#0B2E5C",
+          "accents": [
+            "radial-gradient(circle at 12% 6%, rgba(110,165,240,0.26) 0%, transparent 22%)",
+            "radial-gradient(circle at 78% 78%, rgba(70,130,215,0.28) 0%, transparent 30%)"
+          ]
+        },
+        "text_secondary": "#C6D6EE",
+        "text_tertiary": "#A3BCE4",
+        "eyebrow": "#8FB4E8",
+        "accent_marker": "#6FA6F0",
+        "measured_body_contrast": 9.14
+      },
+      "green_dark": {
+        "background": {
+          "base_color": "#26301C",
+          "accents": [
+            "radial-gradient(circle at 12% 6%, rgba(150,180,115,0.22) 0%, transparent 22%)",
+            "radial-gradient(circle at 78% 78%, rgba(120,150,90,0.24) 0%, transparent 30%)"
+          ]
+        },
+        "text_secondary": "#E3E7DE",
+        "text_tertiary": "#CBD2C4",
+        "eyebrow": "#EDC492",
+        "accent_marker": "#EDC492",
+        "measured_body_contrast": 11.01
+      }
+    },
+    "palette_roles": {
+      "text_primary": "#FFFFFF",
+      "neutral_structure": "rgba(255,255,255,0.22)",
+      "state_a": "#F2A33C",
+      "state_b": "#3FD0C9",
+      "state_c": "#B79CF5",
+      "focus_attention": "#FFD84D",
+      "warning_error": "#FF6B6B",
+      "channels": {
+        "state_a": {
+          "colour": "#F2A33C",
+          "redundant": "line_style:dashed"
+        },
+        "state_b": {
+          "colour": "#3FD0C9",
+          "redundant": "line_style:solid"
+        },
+        "state_c": {
+          "colour": "#B79CF5",
+          "redundant": "line_style:dotted"
+        },
+        "focus_attention": {
+          "colour": "#FFD84D",
+          "primary_channel": "glow_or_scale_pulse"
+        },
+        "warning_error": {
+          "colour": "#FF6B6B",
+          "primary_channel": "icon_or_shape_change"
+        }
+      },
+      "rule": "colour never carries meaning alone — every semantic distinction has a non-colour channel",
+      "note": "roles are NOT bound to entities here — Layer 4 binds them",
+      "collision_warning": "state_a and warning_error are identical under deuteranopia (1.01:1); separation relies on the shape/icon channel"
+    },
+    "type_styles": {
+      "eyebrow": {
+        "family": "Space Grotesk",
+        "weight": 500,
+        "step": -2,
+        "size_px": 20,
+        "tracking": "0.1em",
+        "transform": "uppercase"
+      },
+      "h1": {
+        "family": "Space Grotesk",
+        "weight": 600,
+        "step": 3,
+        "size_px": 60,
+        "line_height": 1.15
+      },
+      "h2": {
+        "family": "Space Grotesk",
+        "weight": 600,
+        "step": 2,
+        "size_px": 48,
+        "line_height": 1.2
+      },
+      "h3": {
+        "family": "Space Grotesk",
+        "weight": 500,
+        "step": 1,
+        "size_px": 39,
+        "line_height": 1.25
+      },
+      "body": {
+        "family": "Inter",
+        "weight": 400,
+        "step": 0,
+        "size_px": 31,
+        "line_height": 1.5
+      },
+      "body_emphasis": {
+        "family": "Inter",
+        "weight": 500,
+        "step": 0,
+        "size_px": 31,
+        "line_height": 1.5
+      },
+      "caption": {
+        "family": "Inter",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "line_height": 1.4
+      },
+      "label": {
+        "family": "Inter",
+        "weight": 500,
+        "step": -1,
+        "size_px": 25
+      },
+      "code": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "line_height": 1.45
+      },
+      "code_keyword": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "colour_role": "state_a"
+      },
+      "code_comment": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "colour_role": "eyebrow"
+      },
+      "math": {
+        "family": "Source Serif 4",
+        "fallback": "Georgia, serif",
+        "weight": 400,
+        "step": 0,
+        "size_px": 31,
+        "line_height": 1.4
+      },
+      "math_variable": {
+        "family": "Source Serif 4",
+        "weight": 400,
+        "style": "italic",
+        "step": 0,
+        "size_px": 31
+      },
+      "math_subscript": {
+        "family": "Source Serif 4",
+        "weight": 400,
+        "style": "italic",
+        "size_em": 0.62,
+        "vertical_align_em": -0.25
+      },
+      "table_header": {
+        "family": "Space Mono",
+        "weight": 700,
+        "step": -1,
+        "size_px": 25
+      },
+      "table_cell": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25
+      },
+      "panel_label": {
+        "family": "Space Grotesk",
+        "weight": 500,
+        "step": -2,
+        "size_px": 20,
+        "tracking": "0.08em",
+        "transform": "uppercase"
+      },
+      "footer_text": {
+        "family": "Space Grotesk",
+        "weight": 400,
+        "step": -2,
+        "size_px": 20
+      }
+    },
+    "lists": {
+      "level_1": {
+        "marker": "filled_circle",
+        "size_px": 12,
+        "indent_px": 0,
+        "gap_px": 34,
+        "text_style": "body",
+        "vertical_gap_px": 20
+      },
+      "level_2": {
+        "marker": "hollow_circle",
+        "size_px": 10,
+        "stroke_px": 2,
+        "indent_px": 44,
+        "gap_px": 34,
+        "text_style": "body",
+        "vertical_gap_px": 20
+      },
+      "level_3": {
+        "marker": "dash",
+        "size_px": [
+          10,
+          2
+        ],
+        "indent_px": 88,
+        "gap_px": 34,
+        "text_style": "caption",
+        "vertical_gap_px": 20
+      }
+    },
+    "table": {
+      "border": "1px solid rgba(255,255,255,0.15)",
+      "cell_padding": "12px 20px",
+      "header_fill": "rgba(255,255,255,0.06)",
+      "rowhead_fill": "rgba(255,255,255,0.06)",
+      "zebra_striping": false,
+      "alignment_numeric": "right"
+    },
+    "code_block": {
+      "background": "rgba(255,255,255,0.04)",
+      "border_left": "3px solid",
+      "border_left_role": "state_b",
+      "padding": "20px 24px",
+      "radius_px": 3
+    },
+    "footer": {
+      "layout": "flex_space_between",
+      "baseline_px": 52,
+      "rule": "1px solid rgba(255,255,255,0.12)",
+      "rule_offset_px": 22,
+      "slots": [
+        "attribution",
+        "slide_number"
+      ],
+      "colour": "rgba(255,255,255,0.55)"
+    },
+    "animation_defaults": {
+      "reveal": {
+        "duration_s": 0.3,
+        "easing": "ease-out",
+        "stagger_s": 0.12,
+        "variants": [
+          "fade_in",
+          "draw_on",
+          "consume_text_to_diagram"
+        ]
+      },
+      "state_motion": {
+        "duration_s": 1.1,
+        "variants": [
+          "token_travel"
+        ],
+        "usage_rule": "teach a mechanic only — never decorative",
+        "satisfies": [
+          "VGR-04"
+        ]
+      },
+      "camera": {
+        "duration_s": 0.8,
+        "easing": "ease-in-out",
+        "variants": [
+          "zoom_to_focus",
+          "pan_between_regions",
+          "pull_back_summary"
+        ],
+        "rules": [
+          "camera follows the narration subject",
+          "never move camera and reveal a new element simultaneously"
+        ],
+        "satisfies": [
+          "VGR-03"
+        ]
+      },
+      "layering": {
+        "rule": "dimensions compose on one element, not either/or",
+        "satisfies": [
+          "VGR-02"
+        ]
+      },
+      "slide_transition": {
+        "type": null,
+        "duration_s": null
+      }
+    },
+    "output_encode": {
+      "video_codec": "h264_high",
+      "video_bitrate_mbps": [
+        8,
+        12
+      ],
+      "audio_codec": "aac",
+      "audio_channels": 2,
+      "audio_sample_rate": 48000,
+      "audio_bitrate_kbps": [
+        192,
+        256
+      ],
+      "satisfies": [
+        "TGT-003",
+        "TGT-004",
+        "TGT-005",
+        "TGT-006",
+        "TGT-007",
+        "TGT-008"
+      ]
+    },
+    "required_fonts": [
+      "Space Grotesk",
+      "Inter",
+      "Space Mono",
+      "Source Serif 4"
+    ],
+    "verification": {
+      "contrast_measured": true,
+      "colourblind_checked": true,
+      "typography_legibility_verified_fullscreen": true
+    },
+    "entity_grammar": "NOT DEFINED HERE — see Layer 4"
+  }
+}

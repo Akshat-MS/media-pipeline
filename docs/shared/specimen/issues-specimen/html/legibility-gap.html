@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gap 3 — Full-screen legibility</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0d1220}
+  body{width:1920px;font-family:'Inter',sans-serif;padding-bottom:40px}
+  .hdr{color:#fff;font-family:'Space Grotesk',sans-serif;font-size:34px;padding:26px 60px 8px}
+  .sub{color:#9FB0DA;font-size:21px;padding:0 60px 20px;max-width:1620px;line-height:1.5}
+  .band{margin:0 60px 28px;background:#16234A;border-radius:6px;padding:26px 32px;
+        background-image:radial-gradient(circle at 10% 6%, rgba(120,150,220,0.18) 0%, transparent 30%)}
+  .bt{font-family:'Space Grotesk',sans-serif;font-size:23px;color:#fff;margin-bottom:16px}
+  .lab{font-size:17px;color:#8FA3D9;font-family:'Space Grotesk',sans-serif;
+       letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px}
+
+  .ruler div{color:#C6D0EC;margin-bottom:12px;line-height:1.35}
+  .s60{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:60px;color:#fff}
+  .s48{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:48px;color:#fff}
+  .s39{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:39px}
+  .s31{font-size:31px}
+  .s25{font-size:25px}
+  .s25m{font-family:'Space Mono',monospace;font-size:25px}
+  .s20{font-family:'Space Grotesk',sans-serif;font-size:20px}
+  .tick{color:#F2A33C;font-family:'Space Mono',monospace;font-size:17px;margin-right:16px}
+
+  .shrunk{transform:scale(0.76);transform-origin:left top}
+  .cmp{display:flex;gap:40px}
+  .cmp>div{flex:1}
+  .box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.14);
+       border-radius:4px;padding:20px 24px;height:150px;overflow:hidden}
+  .verdict{margin-top:14px;font-family:'Space Grotesk',sans-serif;font-size:19px;padding:6px 14px;
+           border-radius:3px;display:inline-block;font-weight:600}
+  .bad{background:#6b2020;color:#FFC9C9}
+  .ok{background:#1f5f3f;color:#B8F0D0}
+  .warn{background:#6b5320;color:#FFE6A8}
+  table{border-collapse:collapse;width:100%;color:#C6D0EC;font-size:19px;margin-top:6px}
+  th{background:rgba(255,255,255,0.06);color:#fff;text-align:left;padding:10px 16px;
+     font-family:'Space Grotesk',sans-serif;font-size:18px;border:1px solid rgba(255,255,255,0.12)}
+  td{padding:10px 16px;border:1px solid rgba(255,255,255,0.12)}
+</style>
+</head>
+<body>
+
+<div class="hdr">Gap 3 &mdash; Why the legibility check can&rsquo;t be done from these previews</div>
+<div class="sub">Every specimen is <b>1920&times;1080</b>. Any preview pane that is narrower shrinks it.
+In a typical ~1456px-wide pane that is <b>76% scale</b> &mdash; so 25px code has been shown to us at 19px,
+and 20px footer text at 15px. Judging &ldquo;is this readable&rdquo; from a shrunk image tells you nothing about
+the real thing, and the error runs in the <i>dangerous</i> direction: text that survives shrinking looks safe,
+while the true test is a projector at the back of a room.</div>
+
+<div class="band">
+  <div class="bt">Same block, two scales</div>
+  <div class="cmp">
+    <div>
+      <div class="lab">76% &mdash; what a preview shows</div>
+      <div class="box"><div class="shrunk">
+        <div class="s25m" style="color:#8FA3D9"># find an untriggered safe sequence</div>
+        <div class="s25m" style="color:#C6D0EC"><span style="color:#F2A33C">while</span> Need[i] &lt;= Work:</div>
+        <div class="s20" style="color:rgba(255,255,255,0.55);margin-top:14px">&copy;Ravi Subramanian &nbsp;&nbsp; 03 / 18</div>
+      </div></div>
+      <div class="verdict bad">looks fine &mdash; but this is not the delivered size</div>
+    </div>
+    <div>
+      <div class="lab">100% &mdash; actual delivered size</div>
+      <div class="box">
+        <div class="s25m" style="color:#8FA3D9"># find an untriggered safe sequence</div>
+        <div class="s25m" style="color:#C6D0EC"><span style="color:#F2A33C">while</span> Need[i] &lt;= Work:</div>
+        <div class="s20" style="color:rgba(255,255,255,0.55);margin-top:14px">&copy;Ravi Subramanian &nbsp;&nbsp; 03 / 18</div>
+      </div>
+      <div class="verdict ok">this is what a student sees</div>
+    </div>
+  </div>
+</div>
+
+<div class="band">
+  <div class="bt">Type scale at true size &mdash; every style in the contract</div>
+  <div class="ruler">
+    <div><span class="tick">60px</span><span class="s60">Resource allocation graphs</span></div>
+    <div><span class="tick">48px</span><span class="s48">Heading level 2</span></div>
+    <div><span class="tick">39px</span><span class="s39">Heading level 3</span></div>
+    <div><span class="tick">31px</span><span class="s31">Body &mdash; a process holds resources and requests more</span></div>
+    <div><span class="tick">25px</span><span class="s25">Caption / label &mdash; a resource type may have many instances</span></div>
+    <div><span class="tick">25px</span><span class="s25m">code &mdash; while Need[i] &lt;= Work:</span></div>
+    <div><span class="tick">20px</span><span class="s20">Eyebrow and footer &mdash; OPERATING SYSTEMS &middot; DEADLOCK</span></div>
+  </div>
+</div>
+
+<div class="band">
+  <div class="bt">What the check is actually for</div>
+  <table>
+    <tr><th>Style</th><th>Size</th><th>Risk</th><th>What to confirm full-screen</th></tr>
+    <tr><td>h1 / h2 / h3</td><td>60 / 48 / 39</td><td>none</td><td>&mdash;</td></tr>
+    <tr><td>body</td><td>31px</td><td>low</td><td>comfortable at a glance, not squinted at</td></tr>
+    <tr><td><b>caption / label</b></td><td><b>25px</b></td><td><b>medium</b></td><td>level-3 bullets still readable as content, not decoration</td></tr>
+    <tr><td><b>code / table cell</b></td><td><b>25px</b></td><td><b>medium</b></td><td>digits in the matrix distinguishable; <code>[i]</code> vs <code>[j]</code> clear</td></tr>
+    <tr><td><b>eyebrow / footer</b></td><td><b>20px</b></td><td><b>highest</b></td><td>readable at all, or accept it as decorative</td></tr>
+  </table>
+  <div class="verdict warn">only 25px and 20px are genuinely in question &mdash; the headings are safe at any size</div>
+</div>
+
+<div class="sub" style="padding-top:4px">
+<b>The two-minute check:</b> open <code>specimen_navy_v1.html</code> in a browser, press F11 for full screen
+on a 1080p display, and sit back at normal viewing distance. If the matrix digits and the level-3 bullets read
+comfortably, set <code>typography.legibility_verified_fullscreen: true</code> and the contract is approved.
+If they don&rsquo;t, the fix is one line &mdash; raise the scale base from 31 to 33 or 35, and every size rederives.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Problem 3 — Notation styling</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0d1220}
+  body{width:1920px;font-family:'Inter',sans-serif;padding-bottom:60px}
+  .hdr{color:#fff;font-family:'Space Grotesk',sans-serif;font-size:34px;padding:28px 60px 10px}
+  .sub{color:#9FB0DA;font-size:22px;padding:0 60px 24px;max-width:1560px;line-height:1.5}
+  .row{display:flex;gap:30px;margin:0 60px 34px}
+  .card{
+    flex:1;border-radius:6px;padding:30px 34px;
+    background-color:#16234A;
+    background-image:radial-gradient(circle at 12% 6%, rgba(120,150,220,0.20) 0%, transparent 30%);
+  }
+  .card h3{font-family:'Space Grotesk',sans-serif;font-size:24px;color:#fff;margin:0 0 20px;letter-spacing:.04em}
+  .verdict{margin-top:20px;font-family:'Space Grotesk',sans-serif;font-size:20px;padding:6px 14px;
+           border-radius:3px;display:inline-block;font-weight:600}
+  .bad{background:#6b2020;color:#FFC9C9}
+  .ok{background:#1f5f3f;color:#B8F0D0}
+
+  /* naive: proportional, no table styling */
+  .naive{color:#C6D0EC;font-size:25px;line-height:1.6;white-space:pre}
+  /* fixed: monospace + table */
+  table.mx{border-collapse:collapse;font-family:'Space Mono',monospace;font-size:25px;color:#C6D0EC}
+  table.mx th{font-weight:700;color:#fff;background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.15);padding:10px 18px;text-align:right}
+  table.mx td{border:1px solid rgba(255,255,255,0.15);padding:10px 18px;text-align:right}
+  table.mx td.rh{font-weight:700;color:#fff;background:rgba(255,255,255,0.06);text-align:left}
+
+  pre.naivecode{font-family:'Inter',sans-serif;font-size:25px;line-height:1.5;color:#C6D0EC;margin:0}
+  pre.goodcode{font-family:'Space Mono',monospace;font-size:25px;line-height:1.45;color:#C6D0EC;margin:0;
+    padding:18px 22px;background:rgba(255,255,255,0.04);border-left:3px solid #3FD0C9;border-radius:3px}
+  pre.goodcode .kw{color:#F2A33C}
+  pre.goodcode .cm{color:#8FA3D9}
+</style>
+</head>
+<body>
+
+<div class="hdr">Problem 3 &mdash; No monospace and no table styling</div>
+<div class="sub">V029 (<i>Banker&rsquo;s Algorithm Data Structures</i>) is matrices.
+V030 (<i>Safety Algorithm</i>) is pseudocode. VGR-01 requires formal notation survive verbatim &mdash;
+but it needs a <i>style to survive into</i>. Your current contract has only <b>Inter</b> (proportional) and no table tokens.</div>
+
+<!-- MATRIX -->
+<div class="row">
+  <div class="card">
+    <h3>WITHOUT &mdash; proportional font, no table tokens</h3>
+    <div class="naive">        R1   R2   R3
+P1       0    1    0
+P2       2    0    0
+P3       3    0    2
+Need     7    4    3</div>
+    <div class="verdict bad">columns drift &mdash; digits are not equal width</div>
+  </div>
+  <div class="card">
+    <h3>WITH &mdash; Space Mono + table tokens</h3>
+    <table class="mx">
+      <tr><th></th><th>R1</th><th>R2</th><th>R3</th></tr>
+      <tr><td class="rh">P1</td><td>0</td><td>1</td><td>0</td></tr>
+      <tr><td class="rh">P2</td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td class="rh">P3</td><td>3</td><td>0</td><td>2</td></tr>
+      <tr><td class="rh">Need</td><td>7</td><td>4</td><td>3</td></tr>
+    </table>
+    <div class="verdict ok">columns align &mdash; scannable as a matrix</div>
+  </div>
+</div>
+
+<!-- CODE -->
+<div class="row">
+  <div class="card">
+    <h3>WITHOUT &mdash; pseudocode in Inter</h3>
+<pre class="naivecode">while exists i: Finish[i] = false
+    and Need[i] &lt;= Work:
+    Work := Work + Allocation[i]
+    Finish[i] := true</pre>
+    <div class="verdict bad">indentation unreliable; operators and identifiers blur together</div>
+  </div>
+  <div class="card">
+    <h3>WITH &mdash; Space Mono + code tokens</h3>
+<pre class="goodcode"><span class="cm"># find a safe sequence</span>
+<span class="kw">while</span> exists i: Finish[i] = false
+    <span class="kw">and</span> Need[i] &lt;= Work:
+    Work := Work + Allocation[i]
+    Finish[i] := <span class="kw">true</span></pre>
+    <div class="verdict ok">indentation reads; keywords carry a palette role</div>
+  </div>
+</div>
+
+<div class="sub" style="padding-top:6px"><b>Space Mono</b> is proposed because it shares design DNA with
+<b>Space Grotesk</b> (already your heading face), so the deck stays coherent rather than looking like
+two unrelated typefaces were bolted together.</div>
+
+</body>
+</html>

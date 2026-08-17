@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gap 1 — Math style</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&family=Source+Serif+4:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0d1220}
+  body{width:1920px;font-family:'Inter',sans-serif;padding-bottom:40px}
+  .hdr{color:#fff;font-family:'Space Grotesk',sans-serif;font-size:34px;padding:26px 60px 8px}
+  .sub{color:#9FB0DA;font-size:21px;padding:0 60px 22px;max-width:1560px;line-height:1.5}
+  .row{display:flex;gap:28px;margin:0 60px 26px}
+  .card{flex:1;border-radius:6px;padding:28px 32px;background:#16234A;
+        background-image:radial-gradient(circle at 12% 6%, rgba(120,150,220,0.18) 0%, transparent 30%)}
+  .card h3{font-family:'Space Grotesk',sans-serif;font-size:23px;color:#fff;margin:0 0 6px}
+  .card .n{font-size:18px;color:#8FA3D9;margin-bottom:22px}
+  .v{margin-bottom:22px}
+  .lab{font-size:17px;color:#8FA3D9;font-family:'Space Grotesk',sans-serif;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+
+  /* BAD: everything forced into mono */
+  .mono{font-family:'Space Mono',monospace;font-size:31px;color:#C6D0EC;line-height:1.5}
+
+  /* GOOD: dedicated math style */
+  .math{font-family:'Source Serif 4','Georgia',serif;font-size:33px;color:#C6D0EC;line-height:1.5}
+  .math i{font-style:italic}
+  .math sub{font-size:0.62em;vertical-align:-0.25em;font-style:italic;padding-left:1px}
+  .math sup{font-size:0.62em;vertical-align:0.45em}
+  .math .op{font-style:normal;padding:0 .18em}
+
+  /* code stays mono — that's correct */
+  .code{font-family:'Space Mono',monospace;font-size:25px;color:#C6D0EC;line-height:1.45;
+        background:rgba(255,255,255,0.04);border-left:3px solid #3FD0C9;padding:16px 20px;border-radius:3px}
+  .code .kw{color:#F2A33C}
+
+  .verdict{margin-top:6px;font-family:'Space Grotesk',sans-serif;font-size:19px;padding:6px 14px;
+           border-radius:3px;display:inline-block;font-weight:600}
+  .bad{background:#6b2020;color:#FFC9C9}
+  .ok{background:#1f5f3f;color:#B8F0D0}
+</style>
+</head>
+<body>
+
+<div class="hdr">Gap 1 &mdash; Monospace cannot carry subscripts</div>
+<div class="sub">Your decks use <b>P<sub>i</sub></b>, <b>R<sub>j</sub></b>, and set notation like
+<b>P = {P<sub>1</sub>, P<sub>2</sub>, &hellip; P<sub>n</sub>}</b>.
+Monospace forces every glyph to the same width, so subscripts cannot shrink or sit below the baseline &mdash;
+they render as full-size characters on the line.</div>
+
+<div class="row">
+  <div class="card">
+    <h3>WITHOUT &mdash; math forced into Space Mono</h3>
+    <div class="n">what the current contract specifies</div>
+
+    <div class="v">
+      <div class="lab">Set notation</div>
+      <div class="mono">P = {P1, P2, ... Pn}</div>
+    </div>
+    <div class="v">
+      <div class="lab">Edge definition</div>
+      <div class="mono">Pi ---&gt; Rj</div>
+    </div>
+    <div class="v">
+      <div class="lab">Condition</div>
+      <div class="mono">Need[i] &lt;= Work</div>
+    </div>
+    <div class="verdict bad">subscripts sit on the baseline at full size &mdash; P1 reads as "P one", not "P sub one"</div>
+  </div>
+
+  <div class="card">
+    <h3>WITH &mdash; dedicated <code>math</code> style</h3>
+    <div class="n">serif, italic variables, true subscripts</div>
+
+    <div class="v">
+      <div class="lab">Set notation</div>
+      <div class="math"><i>P</i><span class="op">=</span>{<i>P</i><sub>1</sub>, <i>P</i><sub>2</sub>, &hellip; <i>P</i><sub>n</sub>}</div>
+    </div>
+    <div class="v">
+      <div class="lab">Edge definition</div>
+      <div class="math"><i>P</i><sub>i</sub> <span class="op">&rarr;</span> <i>R</i><sub>j</sub></div>
+    </div>
+    <div class="v">
+      <div class="lab">Condition</div>
+      <div class="math"><i>Need</i><sub>i</sub> <span class="op">&le;</span> <i>Work</i></div>
+    </div>
+    <div class="verdict ok">variables italic, indices subscripted, real &le; and &rarr; glyphs</div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:2">
+    <h3>Both styles coexist &mdash; they do different jobs</h3>
+    <div class="n">this is the point: <code>code</code> stays mono, <code>math</code> becomes its own style</div>
+    <div style="display:flex;gap:34px;align-items:flex-start;margin-top:8px">
+      <div style="flex:1">
+        <div class="lab">code &mdash; Space Mono (alignment matters)</div>
+        <div class="code"><span class="kw">while</span> Need[i] &lt;= Work:
+    Work := Work + Alloc[i]</div>
+      </div>
+      <div style="flex:1">
+        <div class="lab">math &mdash; serif + subscripts (notation matters)</div>
+        <div class="math" style="padding-top:10px">
+          <i>E</i> <span class="op">=</span> {<i>P</i><sub>1</sub>&rarr;<i>R</i><sub>1</sub>, <i>R</i><sub>2</sub>&rarr;<i>P</i><sub>1</sub>}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sub" style="padding-top:4px"><b>Proposed:</b> <code>math</code> = Source Serif 4 (or Georgia as fallback),
+italic for variables, <code>sub</code> at 0.62em offset &minus;0.25em. Serif is the standard convention for
+mathematical variables and separates notation from both body text and code at a glance.</div>
+
+</body>
+</html>

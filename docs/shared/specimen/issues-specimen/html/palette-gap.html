@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Problem 2 — State palette</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0d1220}
+  body{width:1920px;font-family:'Inter',sans-serif;padding-bottom:60px}
+  .hdr{color:#fff;font-family:'Space Grotesk',sans-serif;font-size:34px;padding:28px 60px 10px}
+  .sub{color:#9FB0DA;font-size:22px;padding:0 60px 24px;max-width:1560px;line-height:1.5}
+  .row{display:flex;gap:30px;margin:0 60px 30px}
+  .card{
+    flex:1;border-radius:6px;padding:30px 34px;
+    background-color:#16234A;
+    background-image:radial-gradient(circle at 12% 6%, rgba(120,150,220,0.20) 0%, transparent 30%);
+  }
+  .card h3{font-family:'Space Grotesk',sans-serif;font-size:24px;color:#fff;margin:0 0 6px;letter-spacing:.04em}
+  .card .note{font-size:19px;color:#8FA3D9;margin-bottom:22px}
+  svg{display:block}
+  text.lbl{font-family:'Inter',sans-serif;font-size:21px;font-weight:500}
+  .verdict{margin-top:18px;font-family:'Space Grotesk',sans-serif;font-size:20px;padding:6px 14px;
+           border-radius:3px;display:inline-block;font-weight:600}
+  .bad{background:#6b2020;color:#FFC9C9}
+  .ok{background:#1f5f3f;color:#B8F0D0}
+</style>
+</head>
+<body>
+
+<div class="hdr">Problem 2 &mdash; Red/green carries the meaning, and it collapses</div>
+<div class="sub">Your source decks encode <b>request</b> vs <b>assignment</b> as red vs green arrows.
+The right-hand column simulates deuteranopia (the most common red&ndash;green deficiency, ~6% of men).
+Colour is the <i>only</i> channel carrying the distinction, so when it collapses, the meaning is gone.</div>
+
+<!-- ROW 1: current -->
+<div class="row">
+  <div class="card">
+    <h3>CURRENT &mdash; as most people see it</h3>
+    <div class="note">red = request &nbsp;&middot;&nbsp; green = assignment</div>
+    <svg width="740" height="180" viewBox="0 0 740 180">
+      <line x1="40" y1="50" x2="300" y2="50" stroke="#E74C3C" stroke-width="5"/>
+      <polygon points="300,50 282,41 282,59" fill="#E74C3C"/>
+      <text class="lbl" x="320" y="58" fill="#E74C3C">request edge</text>
+      <line x1="40" y1="130" x2="300" y2="130" stroke="#2ECC71" stroke-width="5"/>
+      <polygon points="300,130 282,121 282,139" fill="#2ECC71"/>
+      <text class="lbl" x="320" y="138" fill="#2ECC71">assignment edge</text>
+    </svg>
+    <div class="verdict bad">red is only 4.00:1 on navy &mdash; below the 4.5:1 floor</div>
+  </div>
+
+  <div class="card">
+    <h3>CURRENT &mdash; deuteranopia simulated</h3>
+    <div class="note">both hues converge; only lightness differs</div>
+    <svg width="740" height="180" viewBox="0 0 740 180">
+      <line x1="40" y1="50" x2="300" y2="50" stroke="#C0C941" stroke-width="5"/>
+      <polygon points="300,50 282,41 282,59" fill="#C0C941"/>
+      <text class="lbl" x="320" y="58" fill="#C0C941">request edge</text>
+      <line x1="40" y1="130" x2="300" y2="130" stroke="#877C94" stroke-width="5"/>
+      <polygon points="300,130 282,121 282,139" fill="#877C94"/>
+      <text class="lbl" x="320" y="138" fill="#877C94">assignment edge</text>
+    </svg>
+    <div class="verdict bad">meaning lost &mdash; no reliable hue separation</div>
+  </div>
+</div>
+
+<!-- ROW 2: proposed -->
+<div class="row">
+  <div class="card">
+    <h3>PROPOSED &mdash; as most people see it</h3>
+    <div class="note">amber + dashed = waiting &nbsp;&middot;&nbsp; cyan + solid = granted</div>
+    <svg width="740" height="180" viewBox="0 0 740 180">
+      <line x1="40" y1="50" x2="300" y2="50" stroke="#F2A33C" stroke-width="5" stroke-dasharray="16 11"/>
+      <polygon points="300,50 282,41 282,59" fill="#F2A33C"/>
+      <text class="lbl" x="320" y="58" fill="#F2A33C">state_a &mdash; dashed</text>
+      <line x1="40" y1="130" x2="300" y2="130" stroke="#3FD0C9" stroke-width="5"/>
+      <polygon points="300,130 282,121 282,139" fill="#3FD0C9"/>
+      <text class="lbl" x="320" y="138" fill="#3FD0C9">state_b &mdash; solid</text>
+    </svg>
+    <div class="verdict ok">7.34:1 and 8.07:1 &mdash; both pass</div>
+  </div>
+
+  <div class="card">
+    <h3>PROPOSED &mdash; deuteranopia simulated</h3>
+    <div class="note">hue separation survives &mdash; and line style is a second channel</div>
+    <svg width="740" height="180" viewBox="0 0 740 180">
+      <line x1="40" y1="50" x2="300" y2="50" stroke="#D9DE69" stroke-width="5" stroke-dasharray="16 11"/>
+      <polygon points="300,50 282,41 282,59" fill="#D9DE69"/>
+      <text class="lbl" x="320" y="58" fill="#D9DE69">state_a &mdash; dashed</text>
+      <line x1="40" y1="130" x2="300" y2="130" stroke="#8D82CB" stroke-width="5"/>
+      <polygon points="300,130 282,121 282,139" fill="#8D82CB"/>
+      <text class="lbl" x="320" y="138" fill="#8D82CB">state_b &mdash; solid</text>
+    </svg>
+    <div class="verdict ok">still separable &mdash; and readable even in greyscale</div>
+  </div>
+</div>
+
+<div class="sub" style="padding-top:6px"><b>The durable fix is redundant encoding:</b> never let colour be the only
+channel. Dashed vs solid carries the same distinction, so the diagram still reads in greyscale,
+on a bad projector, or for a colour-blind student.</div>
+
+</body>
+</html>

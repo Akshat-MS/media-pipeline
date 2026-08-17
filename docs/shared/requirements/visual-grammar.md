@@ -5,7 +5,7 @@
 
 **Purpose:** these are behavioral/generation-time requirements for how the
 pipeline decides *what* to show and *how* to animate it — distinct from
-the numeric delivery thresholds in `1-lecture-alive-ai-foundation.html`
+the numeric delivery thresholds in `../../engine/architecture.md`
 §1.6, which validate the *output file* after it's produced. Nothing here
 is a number you check post-render; each item is a design constraint that
 has to be built into Sequence Mapping's and Rendering & Composition's own
@@ -31,7 +31,7 @@ component — see the note under each.
 
 ## Cross-references
 
-- **§1.6 Quality &amp; Validation Thresholds** (`1-lecture-alive-ai-foundation.html`) —
+- **§1.6 Quality &amp; Validation Thresholds** (`../../engine/architecture.md`) —
   the numeric, post-render gates (resolution, fps, bitrate, sync drift,
   etc.). Text-render QC and Content coverage above are expected to grow
   into real entries in `src/pipeline/validation/thresholds.py` /

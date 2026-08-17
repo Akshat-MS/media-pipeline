@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Problem 1 — Background contrast</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0d1220}
+  body{width:1920px;font-family:'Inter',sans-serif}
+  .hdr{color:#fff;font-family:'Space Grotesk',sans-serif;font-size:34px;padding:28px 60px 10px}
+  .sub{color:#9FB0DA;font-size:22px;padding:0 60px 24px;max-width:1500px;line-height:1.5}
+  .stage{position:relative;width:1800px;height:1013px;margin:0 60px 40px;overflow:hidden;border-radius:6px}
+
+  /* --- A: navy --- */
+  .navy{
+    background-color:#16234A;
+    background-image:
+      radial-gradient(circle at 12% 6%, rgba(120,150,220,0.28) 0%, transparent 22%),
+      radial-gradient(circle at 78% 78%, rgba(90,120,200,0.30) 0%, transparent 30%);
+  }
+  /* --- B: gradient --- */
+  .grad{background:radial-gradient(circle at 30% 20%, #1D4A8C 0%, #0B2E5C 45%, #071F3E 100%)}
+
+  .probe{position:absolute;color:#C6D0EC;font-size:29px;line-height:1.4;width:520px}
+  .tag{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:20px;
+       padding:4px 12px;border-radius:3px;margin-top:10px;font-weight:600}
+  .ok{background:#1f5f3f;color:#B8F0D0}
+  .bad{background:#6b2020;color:#FFC9C9}
+  .warn{background:#6b5320;color:#FFE6A8}
+</style>
+</head>
+<body>
+
+<div class="hdr">Problem 1 &mdash; Background contrast is position-dependent</div>
+<div class="sub">Same body colour <b>#C6D0EC</b> placed at five positions on each background.
+Navy holds one value everywhere. The gradient changes by more than 5:1 across the canvas &mdash;
+so whether text is legible depends on <i>where Layer 3 decides to put it</i>.</div>
+
+<!-- ============ A ============ -->
+<div class="stage navy">
+  <div class="probe" style="top:70px;left:70px">Top-left probe &mdash; body text at 31px<br><span class="tag ok">9.93 : 1 &nbsp;PASS</span></div>
+  <div class="probe" style="top:70px;left:1150px">Top-right probe<br><span class="tag ok">9.93 : 1 &nbsp;PASS</span></div>
+  <div class="probe" style="top:450px;left:600px">Centre probe<br><span class="tag ok">9.93 : 1 &nbsp;PASS</span></div>
+  <div class="probe" style="top:840px;left:70px">Bottom-left probe<br><span class="tag ok">9.93 : 1 &nbsp;PASS</span></div>
+  <div class="probe" style="top:840px;left:1150px">Bottom-right probe<br><span class="tag ok">9.93 : 1 &nbsp;PASS</span></div>
+  <div style="position:absolute;top:20px;left:70px;color:#8FA3D9;font-family:'Space Grotesk';font-size:22px;letter-spacing:.1em">OPTION A &mdash; NAVY (UNIFORM)</div>
+</div>
+
+<!-- ============ B ============ -->
+<div class="stage grad">
+  <div class="probe" style="top:70px;left:70px">Top-left probe<br><span class="tag ok">8.4 : 1 &nbsp;PASS</span></div>
+  <div class="probe" style="top:70px;left:400px">Brightest region &mdash; this is where the gradient peaks<br><span class="tag bad">5.91 : 1 &nbsp;FAILS 7:1 TARGET</span></div>
+  <div class="probe" style="top:450px;left:600px">Centre probe<br><span class="tag warn">7.1 : 1 &nbsp;MARGINAL</span></div>
+  <div class="probe" style="top:840px;left:70px">Bottom-left probe<br><span class="tag ok">10.2 : 1 &nbsp;PASS</span></div>
+  <div class="probe" style="top:840px;left:1150px">Bottom-right probe<br><span class="tag ok">11.18 : 1 &nbsp;PASS</span></div>
+  <div style="position:absolute;top:20px;left:70px;color:#8FB4E8;font-family:'Space Grotesk';font-size:22px;letter-spacing:.1em">OPTION B &mdash; GRADIENT (VARIES 5.91 &rarr; 11.18)</div>
+</div>
+
+</body>
+</html>
