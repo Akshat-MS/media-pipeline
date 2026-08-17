@@ -41,10 +41,13 @@ What we chose, stated plainly.
 | [ADR-004](ADR-004-job-resumability-and-checkpointing.md) | Job resumability and checkpointing | Phase 1 §1.4 |
 | [ADR-005](ADR-005-schema-versioning-strategy.md) | Schema versioning strategy | Phase 1 §1.5 |
 | [ADR-006](ADR-006-testing-and-local-ci.md) | Testing and local CI infrastructure | Phase 1 §1.7 |
+| [ADR-007](ADR-007-config-mgmt.md) | Config Mgmt (all eight design questions) | Phase 2 |
 
 Phase 1 §1.6 (Quality & Validation Thresholds) is not an ADR — it is a
 requirements register, at
 [`../shared/requirements/quality-thresholds.md`](../shared/requirements/quality-thresholds.md).
 
-**Next:** ADR-007 onward will come from the eight Config Mgmt design questions
-in [`../engine/config-mgmt-handoff.md`](../engine/config-mgmt-handoff.md).
+**Note:** ADR-007 covers all eight Config Mgmt design questions from
+[`../engine/config-mgmt-handoff.md`](../engine/config-mgmt-handoff.md) in a
+single file rather than one ADR per question — a deliberate deviation from
+the append-only convention above; see the note at the top of ADR-007.

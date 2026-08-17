@@ -107,3 +107,35 @@ ffprobe/python-pptx; whisper (CPU); hw-accel ffmpeg — **Depends on:** Step 4 �
 **Deferred to next working session:** actual LXD container creation scripts (3 containers, named per the map in 1.3), workspace/repo folder scaffolding, and the concrete CI/quality-check tooling install — all to be built next, following the parameterized-script pattern already in your toolkit rather than from scratch.
 
 All seven decisions are locked to the single constraint governing this build: maximum solo velocity on one machine within 5 days, deferring every distributed/multi-tenant/heavy-infra concern to a hypothetical future phase this build does not need to anticipate today.
+
+---
+
+## Phase 2 — Config Mgmt
+
+**Status:** design finalized. Implementation not yet started.
+
+Eight design questions from `docs/engine/config-mgmt-handoff.md` § 3, all
+decided together in a single combined ADR rather than one per question.
+
+→ [ADR-007 · Config Mgmt (all eight design questions)](../adr/ADR-007-config-mgmt.md)
+
+![Fig. 3 — Config Mgmt internal pipeline. The committed style contract JSON flows through parse, validate, version, and resolve inside services/config/, producing a single resolved, immutable config object consumed by Rendering. A future config-authoring UI is out of scope.](diagrams/fig-3-config-mgmt-pipeline.svg)
+
+*Fig. 3 — Config Mgmt internal pipeline, zoomed in from Fig. 1's single "Config Mgmt" box. Each internal stage is tagged with the design question that shapes it.*
+
+### Phase 2 Summary Table
+
+| Item | Decision | Design Status | Completed |
+| --- | --- | --- | --- |
+| **2.1** Placement & module layout | `src/pipeline/services/config/`, flat: `loader.py` / `models.py` / `resolver.py` | **FINAL** | **NOT STARTED** |
+| **2.2** Theme resolution | Resolve once at load → flat token set; default `navy`; unknown theme name still fails loudly | **FINAL** | **NOT STARTED** |
+| **2.3** Validation model | All fields mandatory except `theme_selected` / `slide_transition.type` / declared fallbacks; fail loudly with field path | **FINAL** | **NOT STARTED** |
+| **2.4** Schema versioning | Contract-specific envelope (not `SchemaEnvelope`); no migration registered yet at `1.0.0` | **FINAL** | **NOT STARTED** |
+| **2.5** Encode-target ownership | `delivery-targets.md` remains owner; drift caught by a cross-check test, not runtime coupling | **FINAL** | **NOT STARTED** |
+| **2.6** Immutability & access | Plain `load_style_contract()` function, called once, passed explicitly — no singleton | **FINAL** | **NOT STARTED** |
+| **2.7** Override precedence | CLI arg → `PIPELINE_STYLE_THEME` env var → contract's `theme_selected` → navy floor; winning source logged | **FINAL** | **NOT STARTED** |
+| **2.8** Forward fit for Layer 4 | Loader stays style-contract-specific; revisit generalization once Layer 4 has a real schema | **FINAL** | **NOT STARTED** |
+
+**Legend:** same convention as the Phase 1 table above — *Design Status* is
+whether the decision is locked; *Completed* tracks actual implementation
+and updates as build steps land.
