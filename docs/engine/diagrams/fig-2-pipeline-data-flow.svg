@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 1090" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif">
+          <defs>
+            <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 z" fill="#5FD4C7"/>
+            </marker>
+            <marker id="arAmber" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 z" fill="#E8A33D"/>
+            </marker>
+            <marker id="arGreen" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 z" fill="#4ADE80"/>
+            </marker>
+            <style>
+              .bl   { fill:#E6EDF3; font-size:14px; font-weight:600; }
+              .sb   { fill:#9AA6B8; font-size:11px; }
+              .mono { fill:#5FD4C7; font-size:11px; font-family:'JetBrains Mono','Courier New',monospace; }
+              .monoP{ fill:#A78BFA; font-size:11px; font-family:'JetBrains Mono','Courier New',monospace; }
+              .lbl  { fill:#6B7383; font-size:11px; font-weight:600; letter-spacing:0.14em; }
+              .artL { fill:#C9D4E3; font-size:12.5px; font-family:'JetBrains Mono','Courier New',monospace; }
+              .gateT{ fill:#E8A33D; font-size:11.5px; font-weight:700; letter-spacing:0.04em; }
+              .fl   { stroke:#5FD4C7; stroke-width:1.7; fill:none; }
+              .flA  { stroke:#E8A33D; stroke-width:1.7; fill:none; }
+              .flG  { stroke:#4ADE80; stroke-width:1.9; fill:none; }
+              .proc { fill:rgba(95,212,199,0.09); stroke:#5FD4C7; stroke-width:1.4; }
+              .inp  { fill:rgba(232,163,61,0.11); stroke:#E8A33D; stroke-width:1.5; stroke-dasharray:6 4; }
+              .res  { fill:rgba(167,139,250,0.10); stroke:#A78BFA; stroke-width:1.4; }
+              .cfg  { fill:rgba(135,146,163,0.10); stroke:#8792A3; stroke-width:1.4; }
+              .gate { fill:rgba(232,163,61,0.13); stroke:#E8A33D; stroke-width:1.2; }
+              .rndr { fill:rgba(232,163,61,0.10); stroke:#E8A33D; stroke-width:1.4; }
+              .grp  { fill:none; stroke:#2C3346; stroke-width:1.3; stroke-dasharray:5 4; }
+              .grpL { fill:#6B7383; font-size:10.5px; font-weight:600; letter-spacing:0.13em; }
+              .out  { fill:rgba(74,222,128,0.12); stroke:#4ADE80; stroke-width:1.5; }
+            </style>
+          </defs>
+        
+          <!-- dark backdrop -->
+          <rect x="0" y="0" width="820" height="1090" fill="#0B0E14"/>
+        
+          <!-- INPUT -->
+          <text x="34" y="66" class="lbl">INPUT</text>
+          <rect x="270" y="24" width="280" height="74" rx="10" class="inp"/>
+          <text x="410" y="54" text-anchor="middle" class="bl">slide deck (PPTX)</text>
+          <text x="410" y="78" text-anchor="middle" class="sb">lecture video (MP4 + audio)</text>
+        
+          <!-- input fan-out -->
+          <path class="fl" d="M410,98 L410,126"/>
+          <path class="fl" d="M220,126 L600,126"/>
+          <path class="fl" d="M220,126 L220,150" marker-end="url(#ar)"/>
+          <path class="fl" d="M600,126 L600,150" marker-end="url(#ar)"/>
+        
+          <!-- Visual Extraction -->
+          <rect x="110" y="150" width="220" height="92" rx="8" class="proc"/>
+          <text x="220" y="190" text-anchor="middle" class="bl">Visual Extraction</text>
+          <text x="220" y="216" text-anchor="middle" class="mono">→ manifest.json</text>
+        
+          <!-- Audio Preprocessing -->
+          <rect x="470" y="150" width="260" height="92" rx="8" class="proc"/>
+          <text x="600" y="180" text-anchor="middle" class="bl">Audio Preprocessing</text>
+          <text x="600" y="202" text-anchor="middle" class="sb">normalize −16 LUFS · denoise · gain</text>
+          <text x="600" y="224" text-anchor="middle" class="mono">→ enhanced_audio.wav</text>
+        
+          <!-- Audio -> Transcript -->
+          <path class="fl" d="M600,242 L600,286" marker-end="url(#ar)"/>
+        
+          <!-- Transcript Alignment -->
+          <rect x="470" y="286" width="260" height="92" rx="8" class="proc"/>
+          <text x="600" y="320" text-anchor="middle" class="bl">Transcript Alignment</text>
+          <text x="600" y="342" text-anchor="middle" class="sb">STT on enhanced audio</text>
+          <text x="600" y="364" text-anchor="middle" class="mono">→ transcript.json</text>
+        
+          <!-- merge into Manifest Review -->
+          <path class="fl" d="M220,242 L220,404"/>
+          <path class="fl" d="M600,378 L600,404"/>
+          <path class="fl" d="M220,404 L600,404"/>
+          <path class="flA" d="M410,404 L410,418" marker-end="url(#arAmber)"/>
+        
+          <!-- Manifest Review gate -->
+          <rect x="290" y="418" width="240" height="30" rx="15" class="gate"/>
+          <text x="410" y="438" text-anchor="middle" class="gateT">✓ MANIFEST REVIEW</text>
+        
+          <!-- artifact label -->
+          <path class="fl" d="M410,448 L410,462"/>
+          <text x="410" y="482" text-anchor="middle" class="artL">manifest.json + transcript.json</text>
+        
+          <!-- split to Sequence Mapping / Resource Library -->
+          <path class="fl" d="M410,490 L410,500"/>
+          <path class="fl" d="M220,500 L600,500"/>
+          <path class="fl" d="M220,500 L220,514" marker-end="url(#ar)"/>
+          <path class="fl" d="M600,500 L600,514" marker-end="url(#ar)"/>
+        
+          <!-- Sequence Mapping -->
+          <rect x="100" y="514" width="240" height="92" rx="8" class="proc"/>
+          <text x="220" y="548" text-anchor="middle" class="bl">Sequence Mapping</text>
+          <text x="220" y="570" text-anchor="middle" class="sb">correlate visuals ↔ transcript</text>
+          <text x="220" y="592" text-anchor="middle" class="mono">→ plan.json (+ text)</text>
+        
+          <!-- Resource Library -->
+          <rect x="470" y="514" width="260" height="92" rx="8" class="res"/>
+          <text x="600" y="548" text-anchor="middle" class="bl">Resource Library</text>
+          <text x="600" y="570" text-anchor="middle" class="sb">read + write; add new</text>
+          <text x="600" y="588" text-anchor="middle" class="sb">unmatched visual assets</text>
+        
+          <!-- Sequence Mapping -> Plan Review -->
+          <path class="flA" d="M220,606 L220,628" marker-end="url(#arAmber)"/>
+        
+          <!-- Plan Review gate -->
+          <rect x="70" y="628" width="300" height="30" rx="15" class="gate"/>
+          <text x="220" y="648" text-anchor="middle" class="gateT">✓ PLAN REVIEW — human edit point</text>
+        
+          <!-- Config Mgmt -->
+          <rect x="470" y="672" width="220" height="86" rx="8" class="cfg"/>
+          <text x="580" y="704" text-anchor="middle" class="bl">Config Mgmt</text>
+          <text x="580" y="726" text-anchor="middle" class="sb">read-only:</text>
+          <text x="580" y="742" text-anchor="middle" class="sb">theme / pacing</text>
+        
+          <!-- Resource Library assets feed render -->
+          <text x="642" y="646" class="sb" font-style="italic">assets feed render</text>
+        
+          <!-- flows into Rendering -->
+          <!-- plan review -> HTML build -->
+          <path class="fl" d="M220,658 L220,790 L270,790 L270,812" marker-end="url(#ar)"/>
+          <!-- config -> rendering -->
+          <path class="fl" d="M580,758 L580,784 L470,784 L470,812" marker-end="url(#ar)"/>
+          <!-- resource library -> rendering -->
+          <path class="fl" d="M600,606 L600,790 L600,812" marker-end="url(#ar)"/>
+        
+          <!-- RENDERING & COMPOSITION group -->
+          <rect x="130" y="812" width="560" height="118" rx="10" class="grp"/>
+          <text x="150" y="834" class="grpL">RENDERING &amp; COMPOSITION</text>
+        
+          <rect x="160" y="846" width="220" height="66" rx="8" class="rndr"/>
+          <text x="270" y="876" text-anchor="middle" class="bl">HTML Build</text>
+          <text x="270" y="897" text-anchor="middle" class="sb">plan → HTML DOM</text>
+        
+          <rect x="430" y="846" width="230" height="66" rx="8" class="rndr"/>
+          <text x="545" y="876" text-anchor="middle" class="bl">Video Compose</text>
+          <text x="545" y="897" text-anchor="middle" class="sb">HTML + audio → synced mp4</text>
+        
+          <path class="fl" d="M380,879 L430,879" marker-end="url(#ar)"/>
+        
+          <!-- rendering -> Final Review -->
+          <path class="flA" d="M410,930 L410,952" marker-end="url(#arAmber)"/>
+        
+          <!-- Final Review gate -->
+          <rect x="266" y="952" width="288" height="32" rx="16" class="gate"/>
+          <text x="410" y="973" text-anchor="middle" class="gateT">✓ FINAL REVIEW &amp; SYNC QC</text>
+        
+          <!-- Final -> Delivery -->
+          <path class="flG" d="M410,984 L410,1006" marker-end="url(#arGreen)"/>
+        
+          <!-- Delivery -->
+          <rect x="310" y="1006" width="200" height="60" rx="10" class="out"/>
+          <text x="410" y="1035" text-anchor="middle" class="bl">Delivery</text>
+          <text x="410" y="1055" text-anchor="middle" class="mono" style="fill:#4ADE80;">.mp4</text>
+        </svg>

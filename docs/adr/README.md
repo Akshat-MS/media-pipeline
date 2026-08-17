@@ -31,8 +31,20 @@ What we chose, stated plainly.
 - <option> — why not
 ```
 
-## Backlog
+## Index
 
-Phase 1 decisions are recorded in `engine/architecture.md` and have not yet
-been extracted into individual records. The eight Config Mgmt design questions
-will produce the first new entries.
+| ID | Decision | Origin |
+|---|---|---|
+| [ADR-001](ADR-001-core-language-and-runtime.md) | Core language and runtime | Phase 1 §1.1 |
+| [ADR-002](ADR-002-local-state-store.md) | Local state store | Phase 1 §1.2 |
+| [ADR-003](ADR-003-project-structure-and-module-boundaries.md) | Project structure and module boundaries | Phase 1 §1.3 |
+| [ADR-004](ADR-004-job-resumability-and-checkpointing.md) | Job resumability and checkpointing | Phase 1 §1.4 |
+| [ADR-005](ADR-005-schema-versioning-strategy.md) | Schema versioning strategy | Phase 1 §1.5 |
+| [ADR-006](ADR-006-testing-and-local-ci.md) | Testing and local CI infrastructure | Phase 1 §1.7 |
+
+Phase 1 §1.6 (Quality & Validation Thresholds) is not an ADR — it is a
+requirements register, at
+[`../shared/requirements/quality-thresholds.md`](../shared/requirements/quality-thresholds.md).
+
+**Next:** ADR-007 onward will come from the eight Config Mgmt design questions
+in [`../engine/config-mgmt-handoff.md`](../engine/config-mgmt-handoff.md).
