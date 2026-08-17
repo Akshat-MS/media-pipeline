@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Layer 1 reference specimen — v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- theme: navy (runtime-selectable) ---- */
+    --bg-base:#16234A;
+    --bg-accent-1:rgba(120,150,220,0.28);
+    --bg-accent-2:rgba(90,120,200,0.30);
+    --text-primary:#FFFFFF;
+    --text-secondary:#C6D0EC;
+    --text-tertiary:#9FB0DA;
+    --eyebrow:#8FA3D9;
+    --accent-marker:#7C9BE8;
+    --footer:rgba(255,255,255,0.55);
+    /* ---- palette roles (theme-independent) ---- */
+    --neutral-structure:rgba(255,255,255,0.22);
+    --state-a:#F2A33C;
+    --state-b:#3FD0C9;
+    --state-c:#B79CF5;
+    --focus:#FFD84D;
+    --warning:#FF6B6B;
+    /* ---- grid ---- */
+    --m-x:120px; --m-y:96px;
+    --col:118px; --row:90px; --gut:24px;
+  }
+  html,body{margin:0;padding:0}
+  body{
+    width:1920px;height:1080px;overflow:hidden;position:relative;
+    background-color:var(--bg-base);
+    background-image:
+      radial-gradient(circle at 12% 6%, var(--bg-accent-1) 0%, transparent 22%),
+      radial-gradient(circle at 78% 78%, var(--bg-accent-2) 0%, transparent 30%);
+    font-family:'Inter',sans-serif;
+  }
+
+  /* ===== grid overlay — add ?grid to URL or class="show-grid" on body ===== */
+  .grid-overlay{position:absolute;inset:0;pointer-events:none;opacity:0}
+  body.show-grid .grid-overlay{opacity:1}
+  .grid-overlay .c{position:absolute;top:var(--m-y);height:888px;width:var(--col);
+    background:rgba(63,208,201,0.10);border-left:1px solid rgba(63,208,201,0.35)}
+  .grid-overlay .r{position:absolute;left:var(--m-x);width:1680px;height:1px;
+    background:rgba(63,208,201,0.28)}
+
+  /* ===== chrome ===== */
+  .eyebrow{position:absolute;top:var(--m-y);left:var(--m-x);
+    font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:20px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--eyebrow)}
+  .footer{position:absolute;bottom:52px;left:var(--m-x);right:var(--m-x);
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:20px;color:var(--footer)}
+  .footer .rule{position:absolute;left:0;right:0;top:-22px;height:1px;background:rgba(255,255,255,0.12)}
+
+  /* ===== type scale: base 31, ratio 1.25 ===== */
+  .h1{position:absolute;top:140px;left:var(--m-x);width:820px;
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:60px;
+    line-height:1.15;color:var(--text-primary)}
+  .h2{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:48px;
+    line-height:1.2;color:var(--text-primary);margin:0 0 14px}
+  .h3{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:39px;
+    line-height:1.25;color:var(--text-secondary);margin:0 0 12px}
+
+  /* ===== left column: grid cols 1–6 ===== */
+  .col-left{position:absolute;top:324px;left:var(--m-x);width:826px}
+  ul.b{list-style:none;margin:0;padding:0}
+  ul.b li{position:relative;color:var(--text-secondary);font-size:31px;line-height:1.5;margin-bottom:16px}
+  li.l1{padding-left:34px}
+  li.l1::before{content:"";position:absolute;left:0;top:16px;width:12px;height:12px;
+    border-radius:50%;background:var(--accent-marker)}
+  li.l2{padding-left:78px}
+  li.l2::before{content:"";position:absolute;left:44px;top:16px;width:10px;height:10px;
+    border-radius:50%;background:transparent;border:2px solid var(--accent-marker);box-sizing:border-box}
+  li.l3{padding-left:122px;font-size:25px;color:var(--text-tertiary)}
+  li.l3::before{content:"";position:absolute;left:88px;top:14px;width:10px;height:2px;background:var(--accent-marker)}
+
+  /* ===== math style ===== */
+  .math{font-family:'Source Serif 4',Georgia,serif;font-size:31px;
+    color:var(--text-secondary);line-height:1.4}
+  .math i{font-style:italic}
+  .math sub{font-size:.62em;vertical-align:-0.25em;font-style:italic;padding-left:1px}
+  .math .op{font-style:normal;padding:0 .22em}
+
+  /* ===== right column: grid cols 8–12 ===== */
+  .col-right{position:absolute;top:150px;left:1114px;width:686px}
+  .panel-label{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:20px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--eyebrow);margin-bottom:12px}
+
+  table.mx{border-collapse:collapse;font-family:'Space Mono',monospace;font-size:25px;color:var(--text-secondary)}
+  table.mx th{font-weight:700;color:var(--text-primary);background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.15);padding:10px 18px;text-align:right}
+  table.mx td{border:1px solid rgba(255,255,255,0.15);padding:10px 18px;text-align:right}
+  table.mx td.rowhead{font-weight:700;color:var(--text-primary);background:rgba(255,255,255,0.06);text-align:left}
+
+  pre.code{font-family:'Space Mono',monospace;font-size:25px;line-height:1.45;
+    color:var(--text-secondary);margin:0;padding:16px 20px;background:rgba(255,255,255,0.04);
+    border-left:3px solid var(--state-b);border-radius:3px}
+  pre.code .kw{color:var(--state-a)}
+  pre.code .cm{color:var(--eyebrow)}
+
+  text.elabel{font-family:'Inter',sans-serif;font-size:19px;font-weight:500}
+</style>
+</head>
+<body>
+
+  <div class="grid-overlay" id="go"></div>
+
+  <div class="eyebrow">Operating systems &middot; Deadlock</div>
+  <div class="h1">Resource allocation graphs</div>
+
+  <!-- ===== LEFT ===== -->
+  <div class="col-left">
+    <div class="h2">Heading level 2</div>
+    <div class="h3">Heading level 3</div>
+    <ul class="b">
+      <li class="l1">A process holds resources and requests more</li>
+      <li class="l2">Request edges point from process to resource</li>
+      <li class="l3">A resource type may have many instances</li>
+    </ul>
+    <div class="panel-label" style="margin-top:26px">Math &mdash; notation</div>
+    <div class="math">
+      <i>P</i><span class="op">=</span>{<i>P</i><sub>1</sub>, <i>P</i><sub>2</sub>, &hellip; <i>P</i><sub>n</sub>}
+      <span class="op" style="opacity:.45">&nbsp;&nbsp;</span>
+      <i>P</i><sub>i</sub><span class="op">&rarr;</span><i>R</i><sub>j</sub>
+      <span class="op" style="opacity:.45">&nbsp;&nbsp;</span>
+      <i>Need</i><sub>i</sub><span class="op">&le;</span><i>Work</i>
+    </div>
+  </div>
+
+  <!-- ===== RIGHT ===== -->
+  <div class="col-right">
+    <div class="panel-label">Allocation matrix</div>
+    <table class="mx">
+      <tr><th></th><th>R1</th><th>R2</th><th>R3</th></tr>
+      <tr><td class="rowhead">P1</td><td>0</td><td>1</td><td>0</td></tr>
+      <tr><td class="rowhead">P2</td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td class="rowhead">P3</td><td>3</td><td>0</td><td>2</td></tr>
+    </table>
+
+    <div class="panel-label" style="margin-top:26px">Safety algorithm</div>
+<pre class="code"><span class="cm"># find a safe sequence</span>
+<span class="kw">while</span> Need[i] &lt;= Work:
+    Work := Work + Alloc[i]</pre>
+
+    <div class="panel-label" style="margin-top:26px">Palette roles &mdash; colour + second channel</div>
+    <svg width="686" height="238" viewBox="0 0 686 238">
+      <!-- neutral -->
+      <line x1="8" y1="18" x2="150" y2="18" stroke="var(--neutral-structure)" stroke-width="1.5"/>
+      <text class="elabel" x="166" y="25" fill="#9FB0DA">neutral_structure</text>
+
+      <!-- state_a : dashed -->
+      <line x1="8" y1="62" x2="150" y2="62" stroke="var(--state-a)" stroke-width="4" stroke-dasharray="13 9"/>
+      <polygon points="150,62 136,55 136,69" fill="var(--state-a)"/>
+      <text class="elabel" x="166" y="69" fill="#F2A33C">state_a &mdash; dashed</text>
+
+      <!-- state_b : solid -->
+      <line x1="8" y1="106" x2="150" y2="106" stroke="var(--state-b)" stroke-width="4"/>
+      <polygon points="150,106 136,99 136,113" fill="var(--state-b)"/>
+      <text class="elabel" x="166" y="113" fill="#3FD0C9">state_b &mdash; solid</text>
+
+      <!-- state_c : dotted -->
+      <line x1="8" y1="150" x2="150" y2="150" stroke="var(--state-c)" stroke-width="4" stroke-dasharray="2 8" stroke-linecap="round"/>
+      <polygon points="150,150 136,143 136,157" fill="var(--state-c)"/>
+      <text class="elabel" x="166" y="157" fill="#B79CF5">state_c &mdash; dotted</text>
+
+      <!-- focus : glow ring (channel = scale/glow, not colour) -->
+      <circle cx="420" cy="62" r="20" fill="none" stroke="var(--focus)" stroke-width="2" opacity="0.30"/>
+      <circle cx="420" cy="62" r="14" fill="none" stroke="var(--focus)" stroke-width="2" opacity="0.60"/>
+      <circle cx="420" cy="62" r="8"  fill="var(--focus)"/>
+      <text class="elabel" x="452" y="69" fill="#FFD84D">focus &mdash; glow</text>
+
+      <!-- warning : triangle icon (channel = shape, not colour) -->
+      <polygon points="420,86 436,116 404,116" fill="none" stroke="var(--warning)" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="418.5" y="95" width="3" height="11" fill="var(--warning)"/>
+      <rect x="418.5" y="109" width="3" height="3" fill="var(--warning)"/>
+      <text class="elabel" x="452" y="113" fill="#FF6B6B">warning &mdash; icon</text>
+
+      <text class="elabel" x="8" y="200" fill="#9FB0DA" style="font-size:17px">colour never carries meaning alone &mdash; every role has a second channel</text>
+    </svg>
+  </div>
+
+  <div class="footer"><span class="rule"></span><span>&copy;Ravi Subramanian</span><span>03 / 18</span></div>
+
+<script>
+  // build grid overlay: 12 cols x 8 rows
+  (function(){
+    const go=document.getElementById('go');
+    const COL=118, ROW=90, GUT=24, MX=120, MY=96;
+    for(let i=0;i<12;i++){
+      const d=document.createElement('div'); d.className='c';
+      d.style.left=(MX+i*(COL+GUT))+'px'; go.appendChild(d);
+    }
+    for(let j=0;j<=8;j++){
+      const d=document.createElement('div'); d.className='r';
+      d.style.top=(MY+j*(ROW+GUT)-(j>0?GUT/2:0))+'px'; go.appendChild(d);
+    }
+    if(location.search.indexOf('grid')>=0) document.body.classList.add('show-grid');
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Theme comparison — Navy · Blue · Green</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0d1220}
+  body{width:1920px;font-family:'Inter',sans-serif;padding-bottom:50px}
+  .hdr{color:#fff;font-family:'Space Grotesk',sans-serif;font-size:36px;padding:30px 60px 8px}
+  .sub{color:#9FB0DA;font-size:21px;padding:0 60px 26px;max-width:1620px;line-height:1.5}
+  .row{display:flex;gap:24px;margin:0 60px 30px}
+  .col{flex:1;border-radius:6px;overflow:hidden}
+  .cap{font-family:'Space Grotesk',sans-serif;font-size:21px;color:#fff;padding:13px 22px;background:rgba(255,255,255,0.07)}
+  .pane{padding:28px 30px 32px;height:560px;position:relative}
+
+  .navy{background-color:#16234A;background-image:
+    radial-gradient(circle at 12% 6%, rgba(120,150,220,0.28) 0%, transparent 22%),
+    radial-gradient(circle at 78% 78%, rgba(90,120,200,0.30) 0%, transparent 30%)}
+  .blue{background-color:#0B2E5C;background-image:
+    radial-gradient(circle at 12% 6%, rgba(110,165,240,0.26) 0%, transparent 22%),
+    radial-gradient(circle at 78% 78%, rgba(70,130,215,0.28) 0%, transparent 30%)}
+  .green{background-color:#26301C;background-image:
+    radial-gradient(circle at 12% 6%, rgba(150,180,115,0.22) 0%, transparent 22%),
+    radial-gradient(circle at 78% 78%, rgba(120,150,90,0.24) 0%, transparent 30%)}
+
+  .eyebrow{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:17px;
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+  .ttl{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:38px;color:#fff;margin-bottom:20px;line-height:1.15}
+  ul{list-style:none;margin:0 0 18px;padding:0}
+  li{position:relative;padding-left:26px;font-size:22px;line-height:1.45;margin-bottom:10px}
+  li::before{content:"";position:absolute;left:0;top:11px;width:10px;height:10px;border-radius:50%}
+  li.l2{padding-left:56px;font-size:22px}
+  li.l2::before{left:30px;background:transparent!important;border:2px solid;box-sizing:border-box}
+
+  .lbl{font-family:'Space Grotesk',sans-serif;font-size:15px;letter-spacing:.08em;
+    text-transform:uppercase;margin:16px 0 8px}
+  .math{font-family:'Source Serif 4',Georgia,serif;font-size:23px;line-height:1.4}
+  .math i{font-style:italic}
+  .math sub{font-size:.62em;vertical-align:-0.25em;font-style:italic}
+  .math .op{font-style:normal;padding:0 .18em}
+
+  table.mx{border-collapse:collapse;font-family:'Space Mono',monospace;font-size:18px}
+  table.mx th{font-weight:700;color:#fff;background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.15);padding:6px 14px;text-align:right}
+  table.mx td{border:1px solid rgba(255,255,255,0.15);padding:6px 14px;text-align:right}
+  table.mx td.rh{font-weight:700;color:#fff;background:rgba(255,255,255,0.06);text-align:left}
+
+  pre.code{font-family:'Space Mono',monospace;font-size:18px;line-height:1.4;margin:0;
+    padding:12px 16px;background:rgba(255,255,255,0.04);border-left:3px solid #3FD0C9;border-radius:3px}
+  pre.code .kw{color:#F2A33C}
+
+  .states{position:absolute;bottom:28px;left:30px;right:30px}
+  .st{display:flex;align-items:center;font-size:17px;margin-bottom:9px}
+  .swatch{width:52px;height:0;border-top-width:4px;margin-right:12px}
+
+  .cmp{margin:0 60px;border-collapse:collapse;width:calc(100% - 120px);color:#C6D0EC;font-size:20px}
+  .cmp th{background:rgba(255,255,255,0.07);color:#fff;text-align:left;padding:11px 18px;
+    font-family:'Space Grotesk',sans-serif;font-size:19px;border:1px solid rgba(255,255,255,0.12)}
+  .cmp td{padding:11px 18px;border:1px solid rgba(255,255,255,0.12);font-family:'Space Mono',monospace;font-size:19px}
+  .cmp td:first-child{font-family:'Inter',sans-serif}
+  .best{color:#7FE3A0;font-weight:700}
+  .mid{color:#FFD84D}
+</style>
+</head>
+<body>
+
+<div class="hdr">Theme comparison &mdash; Navy &middot; Blue &middot; Military green</div>
+<div class="sub">Identical content and identical token structure; only the theme block differs.
+All three are <b>flat base + soft radial accents</b> &mdash; none has the position-dependent contrast
+problem of the original gradient. State-role colours are theme-independent by design, so semantic
+colour meaning stays constant across all five videos whichever background is chosen.</div>
+
+<div class="row">
+
+  <!-- NAVY -->
+  <div class="col">
+    <div class="cap">A &mdash; Navy &nbsp;<code>#16234A</code></div>
+    <div class="navy pane">
+      <div class="eyebrow" style="color:#8FA3D9">Operating systems &middot; Deadlock</div>
+      <div class="ttl">Resource allocation graphs</div>
+      <ul style="color:#C6D0EC">
+        <li style="--x:0">A process holds resources and requests more</li>
+        <li class="l2">Request edges point process to resource</li>
+      </ul>
+      <style>.navy li::before{background:#7C9BE8} .navy li.l2::before{border-color:#7C9BE8}</style>
+      <div class="lbl" style="color:#8FA3D9">Math</div>
+      <div class="math" style="color:#C6D0EC"><i>P</i><sub>i</sub><span class="op">&rarr;</span><i>R</i><sub>j</sub>
+        <span class="op">&nbsp;</span><i>Need</i><sub>i</sub><span class="op">&le;</span><i>Work</i></div>
+      <div class="lbl" style="color:#8FA3D9">Matrix &amp; code</div>
+      <div style="display:flex;gap:16px;align-items:flex-start">
+        <table class="mx" style="color:#C6D0EC">
+          <tr><th></th><th>R1</th><th>R2</th></tr>
+          <tr><td class="rh">P1</td><td>0</td><td>1</td></tr>
+        </table>
+        <pre class="code" style="color:#C6D0EC"><span class="kw">while</span> Need[i]
+   &lt;= Work:</pre>
+      </div>
+      <div class="states">
+        <div class="st" style="color:#F2A33C"><span class="swatch" style="border-top:4px dashed #F2A33C"></span>state_a &nbsp;7.34:1</div>
+        <div class="st" style="color:#3FD0C9"><span class="swatch" style="border-top:4px solid #3FD0C9"></span>state_b &nbsp;8.07:1</div>
+        <div class="st" style="color:#B79CF5"><span class="swatch" style="border-top:4px dotted #B79CF5"></span>state_c &nbsp;6.62:1</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLUE -->
+  <div class="col">
+    <div class="cap">B &mdash; Blue &nbsp;<code>#0B2E5C</code></div>
+    <div class="blue pane">
+      <div class="eyebrow" style="color:#8FB4E8">Operating systems &middot; Deadlock</div>
+      <div class="ttl">Resource allocation graphs</div>
+      <ul style="color:#C6D6EE">
+        <li>A process holds resources and requests more</li>
+        <li class="l2">Request edges point process to resource</li>
+      </ul>
+      <style>.blue li::before{background:#6FA6F0} .blue li.l2::before{border-color:#6FA6F0}</style>
+      <div class="lbl" style="color:#8FB4E8">Math</div>
+      <div class="math" style="color:#C6D6EE"><i>P</i><sub>i</sub><span class="op">&rarr;</span><i>R</i><sub>j</sub>
+        <span class="op">&nbsp;</span><i>Need</i><sub>i</sub><span class="op">&le;</span><i>Work</i></div>
+      <div class="lbl" style="color:#8FB4E8">Matrix &amp; code</div>
+      <div style="display:flex;gap:16px;align-items:flex-start">
+        <table class="mx" style="color:#C6D6EE">
+          <tr><th></th><th>R1</th><th>R2</th></tr>
+          <tr><td class="rh">P1</td><td>0</td><td>1</td></tr>
+        </table>
+        <pre class="code" style="color:#C6D6EE"><span class="kw">while</span> Need[i]
+   &lt;= Work:</pre>
+      </div>
+      <div class="states">
+        <div class="st" style="color:#F2A33C"><span class="swatch" style="border-top:4px dashed #F2A33C"></span>state_a &nbsp;6.46:1</div>
+        <div class="st" style="color:#3FD0C9"><span class="swatch" style="border-top:4px solid #3FD0C9"></span>state_b &nbsp;7.10:1</div>
+        <div class="st" style="color:#B79CF5"><span class="swatch" style="border-top:4px dotted #B79CF5"></span>state_c &nbsp;5.83:1</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GREEN -->
+  <div class="col">
+    <div class="cap">C &mdash; Military green &nbsp;<code>#26301C</code></div>
+    <div class="green pane">
+      <div class="eyebrow" style="color:#EDC492">Operating systems &middot; Deadlock</div>
+      <div class="ttl">Resource allocation graphs</div>
+      <ul style="color:#E3E7DE">
+        <li>A process holds resources and requests more</li>
+        <li class="l2">Request edges point process to resource</li>
+      </ul>
+      <style>.green li::before{background:#EDC492} .green li.l2::before{border-color:#EDC492}</style>
+      <div class="lbl" style="color:#EDC492">Math</div>
+      <div class="math" style="color:#E3E7DE"><i>P</i><sub>i</sub><span class="op">&rarr;</span><i>R</i><sub>j</sub>
+        <span class="op">&nbsp;</span><i>Need</i><sub>i</sub><span class="op">&le;</span><i>Work</i></div>
+      <div class="lbl" style="color:#EDC492">Matrix &amp; code</div>
+      <div style="display:flex;gap:16px;align-items:flex-start">
+        <table class="mx" style="color:#E3E7DE">
+          <tr><th></th><th>R1</th><th>R2</th></tr>
+          <tr><td class="rh">P1</td><td>0</td><td>1</td></tr>
+        </table>
+        <pre class="code" style="color:#E3E7DE"><span class="kw">while</span> Need[i]
+   &lt;= Work:</pre>
+      </div>
+      <div class="states">
+        <div class="st" style="color:#F2A33C"><span class="swatch" style="border-top:4px dashed #F2A33C"></span>state_a &nbsp;6.62:1</div>
+        <div class="st" style="color:#3FD0C9"><span class="swatch" style="border-top:4px solid #3FD0C9"></span>state_b &nbsp;7.28:1</div>
+        <div class="st" style="color:#B79CF5"><span class="swatch" style="border-top:4px dotted #B79CF5"></span>state_c &nbsp;5.97:1</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<table class="cmp">
+  <tr><th>Token</th><th>Navy #16234A</th><th>Blue #0B2E5C</th><th>Green #26301C</th><th style="font-family:Inter">Note</th></tr>
+  <tr><td>base luminance</td><td>0.0187</td><td>0.0280</td><td class="best">0.0261</td><td style="font-family:Inter">all three dark</td></tr>
+  <tr><td>title #FFFFFF</td><td class="best">15.29</td><td>13.47</td><td>13.80</td><td style="font-family:Inter">far above target</td></tr>
+  <tr><td>body</td><td>9.93</td><td>9.14</td><td class="best">11.01</td><td style="font-family:Inter">green leads</td></tr>
+  <tr><td>level-3 text</td><td>7.06</td><td class="mid">6.97</td><td class="best">8.91</td><td style="font-family:Inter">&mdash;</td></tr>
+  <tr><td>eyebrow</td><td class="mid">6.12</td><td class="mid">6.32</td><td class="best">8.48</td><td style="font-family:Inter">green well clear of 7:1</td></tr>
+  <tr><td>bullet marker</td><td class="mid">5.61</td><td class="mid">5.38</td><td class="best">8.48</td><td style="font-family:Inter">decorative, not text</td></tr>
+  <tr><td>footer</td><td class="mid">5.58</td><td class="mid">5.12</td><td class="mid">5.30</td><td style="font-family:Inter">attribution</td></tr>
+  <tr><td>state_a amber</td><td class="best">7.34</td><td class="mid">6.46</td><td class="mid">6.62</td><td style="font-family:Inter">+ dashed</td></tr>
+  <tr><td>state_b cyan</td><td class="best">8.07</td><td>7.10</td><td>7.28</td><td style="font-family:Inter">+ solid</td></tr>
+  <tr><td>state_c violet</td><td class="mid">6.62</td><td class="mid">5.83</td><td class="mid">5.97</td><td style="font-family:Inter">+ dotted</td></tr>
+  <tr><td>focus yellow</td><td class="best">11.05</td><td>9.73</td><td>9.97</td><td style="font-family:Inter">+ glow</td></tr>
+  <tr><td>warning red</td><td class="mid">5.51</td><td class="mid">4.85</td><td class="mid">4.97</td><td style="font-family:Inter">+ triangle icon</td></tr>
+</table>
+
+<div class="sub" style="padding-top:24px">
+<b>Green leads on text</b> (body 11.01, eyebrow and markers 8.48) because it was given both a darker base
+and lightened tokens. <b>Navy leads on state colours</b> (state_a 7.34, focus 11.05). <b>Blue sits between</b>,
+and is the truest, most open blue of the three.
+Nothing fails WCAG AA on any theme. Values in <span class="mid">yellow</span> are between 4.5:1 and 7:1 &mdash;
+they pass AA but sit below our stricter target; <span class="best">green</span> marks the best of the three.
+</div>
+
+</body>
+</html>
