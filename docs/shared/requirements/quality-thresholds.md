@@ -5,7 +5,7 @@
 the docs restructure. Content unchanged.
 
 > **Relationship to the Layer 0 register.** The encode-related values here
-> overlap `layer0-requirements.md` TGT-003…008, which were derived later from
+> overlap [`delivery-targets.md`](delivery-targets.md) TGT-003…008, which were derived later from
 > competitive analysis. Where the two disagree, **TGT owns the value** — see
 > the ownership table in `docs/README.md`. Config Mgmt design question 5 will
 > settle whether these reference TGT or are reconciled into it.

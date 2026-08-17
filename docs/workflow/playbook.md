@@ -108,7 +108,16 @@ Iterating a layer = bump version + register a migration. Not overwrite-and-hope.
 
 ## How Layer 0 feeds every later layer
 
-**Rule: attach the register in full; scope attention with IDs in the prompt.**
+**Rule: attach the registers in full; scope attention with IDs in the prompt.**
+
+The Layer 0 registers are three files, split by what they hold:
+
+| File | Holds |
+|---|---|
+| `shared/requirements/delivery-targets.md` | TGT-001…011 — numeric, post-render |
+| `shared/requirements/visual-grammar.md` | VGR-01…07 — behavioural, generation-time |
+| `shared/requirements/findings-and-decisions.md` | RC / DEC / PROP |
+| `shared/requirements/competitive-analysis.md` | evidence only, rarely needed |
 
 Do not paste subsets — a pasted subset is a second copy, and copies drift. But
 an unscoped attachment is also wrong: a model handed the whole register will
@@ -116,7 +125,7 @@ try to satisfy audio bitrate targets while being asked about typography.
 
 Every layer prompt opens with:
 
-> **Inputs:** `shared/requirements/layer0-requirements.md`.
+> **Inputs:** the Layer 0 registers.
 > Use only: [ID list]. Ignore all other entries.
 > If a requirement outside that list appears relevant, name it and stop —
 > do not act on it.
@@ -144,7 +153,7 @@ Establishes what the final output must be. The three-way comparison
 (original / ours / competitor) is *evidence*, not the artifact.
 
 ### Output
-`shared/requirements/layer0-requirements.md`:
+the Layer 0 registers:
 
 | Register | Species | Enforced by |
 |---|---|---|
@@ -185,7 +194,7 @@ from a written description** — step 1 must render real visual samples.
 
 ## Layer 1 · Step 1 — propose and render theme directions
 
-> **Inputs:** `shared/requirements/layer0-requirements.md`.
+> **Inputs:** the Layer 0 registers.
 > Use only: VGR-02, VGR-03, TGT-001…004. Ignore all other entries.
 > If a requirement outside that list appears relevant, name it and stop.
 >
@@ -312,7 +321,7 @@ interpretation.
 
 ### Prompt
 
-> **Inputs:** `shared/requirements/layer0-requirements.md`. Use only: VGR-01.
+> **Inputs:** the Layer 0 registers. Use only: VGR-01.
 >
 > Extract this slide's content as JSON: `slide_id`; `metadata`
 > (extraction_path, canvas_dimensions, has_diagram, diagram_implied);
@@ -389,7 +398,7 @@ ffmpeg -i V028.mp4 -vn -c:a copy audio.m4a
 
 ### Prompt
 
-> **Inputs:** `shared/requirements/layer0-requirements.md`. Use only: VGR-05, DEC-001.
+> **Inputs:** the Layer 0 registers. Use only: VGR-05, DEC-001.
 >
 > Produce the transcript with timing. Emit segment-level start/end for every
 > segment. Where word/phrase-level timestamps are available, include them —
@@ -437,7 +446,7 @@ The first layer that makes decisions **because of** the content. Two jobs:
 ### Prompt
 
 > **Inputs:** the slide manifest (L2A), the transcript (L2B),
-> `shared/requirements/layer0-requirements.md`. Use only: VGR-01, VGR-07.
+> the Layer 0 registers. Use only: VGR-01, VGR-07.
 >
 > For each asset with `semantic_type: null`, resolve it using the narration
 > that discusses this slide. State the evidence for each resolution — quote
@@ -511,7 +520,7 @@ The per-video passes are how the shared library gets populated over time.
 ### Prompt
 
 > **Inputs:** the global style contract (Layer 1), the resolved semantic
-> types for this video (Layer 3), `shared/requirements/layer0-requirements.md`.
+> types for this video (Layer 3), the Layer 0 registers.
 > Use only: VGR-02, VGR-04.
 >
 > For each semantic type in this video, decide: shape, icon treatment, line
@@ -582,7 +591,7 @@ Quality may improve; the voice may not be replaced.
 
 ### Prompt
 
-> **Inputs:** original lecture audio, `shared/requirements/layer0-requirements.md`.
+> **Inputs:** original lecture audio, the Layer 0 registers.
 > Use only: TGT-005…010, RC-003.
 >
 > Analyse the source narration: sample rate, channels, bitrate, mean and peak
@@ -634,7 +643,7 @@ nowhere to put one).
 ### Prompt
 
 > **Inputs:** slide representation (Layer 3), visual vocabulary (Layer 4),
-> transcript (L2B), `shared/requirements/layer0-requirements.md`.
+> transcript (L2B), the Layer 0 registers.
 > Use only: VGR-03, VGR-05, VGR-07, TGT-011, RC-002.
 >
 > Build the animated sequence as JSON. For each beat give: `beat_id`,
@@ -764,7 +773,7 @@ Copy per slide.
 5. N × `sequence.json` → target output for Sequence Mapping; input for Renderer
 6. `audio_profile.json` + ffmpeg chain → audio stage implementation
 7. `automation_boundary.json` → which modules to build vs. leave manual
-8. `shared/requirements/layer0-requirements.md` → acceptance criteria
+8. The three Layer 0 registers → acceptance criteria
 
 Items 1, 2 and 7 are highest-value: two are config you would otherwise design
 blind, the third prevents building automation nobody needs.
