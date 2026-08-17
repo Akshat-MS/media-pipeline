@@ -1,7 +1,7 @@
 # Planning
 
 Project-level status tracker. For the detailed 6-phase task/tech/risk
-breakdown, see `media-automation-platform-blueprint.html` (interactive,
+breakdown, see `roadmap.html` (interactive,
 status-trackable within Claude). For Phase 1's full design rationale and
 diagrams, see `architecture.md`.
 
@@ -64,7 +64,7 @@ speculatively, per the Phase 1 "shape now, contents later" pattern.
 
 ## Phases 3–6 — Not Yet Started
 
-See `media-automation-platform-blueprint.html` for the full breakdown:
+See `roadmap.html` for the full breakdown:
 
 - **Phase 3** — Audio/Transcript Synchronization & Alignment
 - **Phase 4** — Sequence Mapping, Asset Library & Execution Strategy

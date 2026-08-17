@@ -125,7 +125,8 @@ questions 1, 2 and 6, to be decided in discussion.
 | File | Why |
 |---|---|
 | `docs/shared/specs/style-contract.md` | **The artifact being managed.** §12 holds the full JSON to load. |
-| `docs/shared/requirements/layer0-requirements.md` | TGT-003…008 encode targets — see the duplication question below |
+| `docs/shared/requirements/delivery-targets.md` | TGT-001…011 — **the owner** of encode values. See question 5. |
+| `docs/shared/requirements/quality-thresholds.md` | Phase 1 §1.6 gates that overlap TGT-003…008 |
 | `docs/workflow/playbook.md` | Layer map and the content/presentation/sequence split |
 | `docs/shared/specimen/specimen-navy.html` | Reference implementation of the contract; useful for sanity-checking token names |
 
@@ -199,7 +200,7 @@ Repo: state the link, it's public and clonable.
 >    like when Layer 1 iterates to v2?
 > 5. **Single source of truth for encode targets.** The contract's
 >    `output_encode` block (codec, bitrate, sample rate) overlaps
->    TGT-003…008 in `docs/shared/requirements/layer0-requirements.md`, which are also the
+>    TGT-003…008 in `docs/shared/requirements/delivery-targets.md`, which are also the
 >    basis for gates in `validation/thresholds.py`. Two copies will drift.
 >    Which one owns these values, and how does the other reference rather
 >    than duplicate them?

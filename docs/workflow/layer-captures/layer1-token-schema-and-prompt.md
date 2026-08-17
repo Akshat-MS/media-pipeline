@@ -171,7 +171,7 @@ Per level. Levels 1–3 minimum.
 
 ### Step 1 — choose a direction (aesthetic judgment only)
 
-> **Inputs:** `shared/requirements/layer0-requirements.md`. Use only: VGR-02, VGR-03,
+> **Inputs:** the Layer 0 registers. Use only: VGR-02, VGR-03,
 > TGT-001…004.
 >
 > Propose **3–4 theme directions** for an educational animation series — five
