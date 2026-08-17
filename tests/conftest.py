@@ -23,11 +23,30 @@ SRC_ROOT = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+import json
+
 import pytest
 
 from pipeline.core import registry
 from pipeline.models import migrations
 from pipeline.state import db, repository
+
+CONTRACT_PATH = SRC_ROOT.parent / "res" / "config" / "style" / "global_style_contract.json"
+
+
+@pytest.fixture
+def real_contract_raw() -> dict:
+    """The real committed style contract, as a plain dict — for tests that
+    want to mutate a copy to construct a malformed variant."""
+    return json.loads(CONTRACT_PATH.read_text())
+
+
+@pytest.fixture
+def real_contract():
+    """The real committed style contract, already loaded and validated."""
+    from pipeline.services.config.loader import load_style_contract
+
+    return load_style_contract()
 
 
 @pytest.fixture
