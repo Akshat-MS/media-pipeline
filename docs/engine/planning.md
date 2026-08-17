@@ -3,7 +3,7 @@
 Project-level status tracker. For the detailed 6-phase task/tech/risk
 breakdown, see `media-automation-platform-blueprint.html` (interactive,
 status-trackable within Claude). For Phase 1's full design rationale and
-diagrams, see `1-lecture-alive-ai-foundation.html`.
+diagrams, see `architecture.md`.
 
 ---
 
