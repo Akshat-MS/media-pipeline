@@ -157,6 +157,6 @@ Wrapped in `SchemaEnvelope` per Phase 1's `models/envelope.py`.
 - Status vocabulary: `adopted`, `constraint`, `proposed`, `rejected`,
   `superseded`.
 - Register B descriptions are edited **only** in
-  `visual_grammar_requirements.md`.
+  `visual-grammar.md`.
 
 ---

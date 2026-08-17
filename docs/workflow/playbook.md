@@ -158,13 +158,13 @@ the Layer 0 registers:
 | Register | Species | Enforced by |
 |---|---|---|
 | **TGT-0xx** | Numeric delivery targets | Post-render validation gates |
-| **VGR-0x** | Behavioural rules | Module logic *(owned by `visual_grammar_requirements.md`)* |
+| **VGR-0x** | Behavioural rules | Module logic *(owned by `shared/requirements/visual-grammar.md`)* |
 | **RC-00x** | Root-cause findings | Change *how* something is built |
 | **DEC / PROP** | Open decisions | — |
 
 ### Governance
 IDs immutable and append-only; retire by `status`, never by deletion;
-Register B descriptions edited only in `visual_grammar_requirements.md`.
+Register B descriptions edited only in `shared/requirements/visual-grammar.md`.
 
 ---
 

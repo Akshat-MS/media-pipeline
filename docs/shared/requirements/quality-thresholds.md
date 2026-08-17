@@ -54,7 +54,7 @@ Numeric, non-negotiable gates enforced automatically after each relevant stage �
 - **WER threshold is model-dependent** — `faster-whisper` base/small models will sit near the 12% ceiling on noisy source audio; this is advisory precisely because of that variability.
 - **Sequence Mapping coverage threshold (90%) is an untuned placeholder** — no real number existed for this anywhere prior; flagged honestly in the code rather than presented as settled.
 
-> **See also:** `docs/visual_grammar_requirements.md` — a standing reference for *generation-time* behavioral requirements (camera movement, animation layering, narration-bound pacing, content coverage) that Phase 4 (Sequence Mapping) and Phase 5 (Rendering & Composition) design work must account for. Distinct from this section: 1.6 validates the output file after the fact; that document shapes how content gets generated in the first place.
+> **See also:** `docs/visual-grammar.md` — a standing reference for *generation-time* behavioral requirements (camera movement, animation layering, narration-bound pacing, content coverage) that Phase 4 (Sequence Mapping) and Phase 5 (Rendering & Composition) design work must account for. Distinct from this section: 1.6 validates the output file after the fact; that document shapes how content gets generated in the first place.
 
 ## Claude Code Implementation Spec
 
