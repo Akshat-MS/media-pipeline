@@ -1,0 +1,147 @@
+# Open Items
+
+**Inbox for observations needing human action.** Append-only.
+
+| | |
+|---|---|
+| **What belongs here** | Process- and design-level observations — something is missing, contradictory, or unowned |
+| **What does not** | Content-level findings about a specific slide or video. Those go in that prompt's own `UNRESOLVED / ASSUMPTIONS / FLAGS` output and are read by the next layer |
+| **The test** | Does the next prompt need this, or does a human need to act on it? |
+
+**Promotion path.** This file is an inbox, not a register. When an observation
+turns out to be a real requirement, it **graduates to a TGT / VGR / RC id** in
+the Layer 1 registers, and the OBS row is closed with a pointer to that id.
+
+**Governance.** OBS ids are immutable and append-only. Close by `status`, never
+by deleting a row.
+
+**Status vocabulary:** `open` · `promoted → <ID>` · `fixed` · `rejected` · `deferred`
+
+---
+
+## Layer 1 — Target Spec
+
+Found by running the Layer 1 review checks (`1-target-spec.md` §4) against the
+delivered registers.
+
+| ID | Observation | Action needed | Blocks | Priority | Status |
+|---|---|---|---|---|---|
+| OBS-001 | **RC-001 (Root Cause finding: internal render fps ≠ export fps) had no gate.** Nothing detected an 8 fps internal render upsampled to 30 fps on export — so the worst defect in the competitive analysis passed every check | Two new Delivery Targets added: TGT-012 (configured frame generation rate, gate) and TGT-013 (effective unique frames per second, advisory). RC-001 amended to cite them | — | — | **closed — promoted → TGT-012, TGT-013** |
+| OBS-002 | **VGR-06 and VGR-07 are marked `needs_validation_gate: true` with no implementation.** No entries in `thresholds.py` / `validators.py` | Decide whether these are gates or advisory, then implement. Layer 8 is the first layer producing something they could check | Layer 8 | **High** | open |
+| OBS-003 | **DEC-001 (Open Decision: word-timestamp source) was open**, while Layers 4, 7 and 8 all already assumed path A (clean the original recording + forced alignment) | **Closed.** Path A confirmed; forced alignment registered as a required component of Transcript Alignment. Layer 4 emits word timings for the whole transcript; Layer 8 selects the phrase span. See closure note below | — | — | **closed — DEC-001 resolved** |
+| OBS-004 | **PROP-001 (Proposal: seconds-per-concept metric) has a `null` threshold**, pending a measurement never taken | **Rejected.** Its origin observation compared a full lecture against two trimmed demo samples, and the concern it guards against is structurally precluded by the narration invariant plus TGT-011. See closure note below | — | — | **closed — rejected** |
+
+---
+
+## Layer 2 — Global Theme
+
+Raised during review of the delivered style contract (v3). Recorded here so they
+are not lost; **not yet actioned.**
+
+| ID | Observation | Action needed | Blocks | Priority | Status |
+|---|---|---|---|---|---|
+| OBS-005 | **Palette roles are named `state_a` / `state_b` / `state_c`** — names that carry no meaning. The Layer 2 prompt asked for a semantic role named per colour ("this colour always means blocked/waiting"); the output satisfies the words and loses the intent. Nothing now prevents the same colour meaning different things in different videos | Rename to semantic roles before Layer 6 binds entities to them | Layer 6 | **High** | open |
+| OBS-006 | **Style contract version mismatch.** The document says v3; the shipped JSON payload says `"version": "v1"` | Reconcile and decide which is authoritative | Layer 6, Layer 8 | **High** | open |
+| OBS-007 | **The `pacing` block was dropped.** The earlier contract carried `fixed_sleeps_allowed: false`, `min_gap_between_actions_s`, `dead_air_defect_threshold_s`. None survive in v3 | Restore, or record deliberately why pacing moved elsewhere | Layer 8 | **High** | open |
+| OBS-008 | **Animation durations are fixed constants** (reveal 0.3s, camera 0.8s, state motion 1.1s) with no floor and no compression rule. A fixed duration is a fixed sleep — it conflicts with VGR-05 and RC-002 | Express as defaults compressible to the narration window, with a stated floor | Layer 8 | **High** | open |
+| OBS-009 | **The redundant colour channel only works for connectors.** `state_a/b/c` are backed by `line_style: dashed/solid/dotted`, which does not exist on a filled shape — so for nodes, "colour never carries meaning alone" has no second channel | Define a per-shape-class channel map (connector → line style; node → border/fill; label → icon) | Layer 6 | Medium | open |
+| OBS-010 | **`token_travel` lost its direction semantics.** The earlier contract defined request = process→resource = "waiting" and assignment = resource→process = "granted". Now it is a bare variant name | Restore the semantics in Layer 6, where entity binding happens | Layer 6 | Medium | open |
+| OBS-011 | **`theme_selected` is `null` by design** (runtime parameter), leaving it unclear which theme Layer 6 bindings must be validated against | **Resolved by ADR-007 §2 and §7.** Default is `navy`; precedence is CLI arg → `PIPELINE_STYLE_THEME` → `theme_selected` → navy floor, with the winning source logged. An unknown theme name fails loudly rather than falling back. Layer 6 validates against navy as the default | — | — | **closed — ADR-007 §2, §7** |
+| OBS-012 | **Grid vertical arithmetic is unstated.** The contract asserts `8×90 + 7×24 = 888 ✓` without relating 888 to the 932px between margins. **Verified against the specimen — it does reconcile:** 888 grid + 22 clearance + 22 footer-rule-to-baseline = 932. Documentation only; nothing is wrong | Add the reconciliation table to the contract | — | Low | **documentation only** |
+
+---
+
+## Project / documentation
+
+| ID | Observation | Action needed | Blocks | Priority | Status |
+|---|---|---|---|---|---|
+| OBS-013 | **No artifact validates against `SchemaEnvelope`.** The code expects `schema_version, generated_at, generator, data`; every artifact uses `schema_version, artifact_type, generated_at, source, payload`. **Narrowed by ADR-007 §4**, which rules that the style contract gets its own envelope-shaped model rather than being forced into `SchemaEnvelope` — because `SchemaEnvelope` is for a *module's runtime output* and the contract is hand-authored at design time. That resolves the contract's case and gives a general rule | Apply the same rule to the Layer 1 registers and to future manifests: decide per artifact whether it is a runtime module output (`SchemaEnvelope`) or a hand-authored design artifact (its own model). Do it before Layer 3 produces manifests at scale | Layer 3 onward | **High** | open — narrowed |
+| OBS-014 | **The migration chain is empty.** `MIGRATIONS = {}`, so `migrate_to_latest()` raises for any schema. **Reframed:** ADR-007 §4 states this is deliberate — at `1.0.0` there is nothing to migrate *from*, and `loader.py` only calls `migrate_to_latest()` when the file's declared version differs from what the code expects. The rule was not violated | The remaining question is narrower: contract v1→v3 added the grid, `channels` and the `math` styles — a genuine key-set change. Decide whether that should have bumped `schema_version`, and if so, register the migration | Nothing immediately | Medium | open — reframed |
+| OBS-015 | **Three documents cite an ownership table in `docs/README.md` that does not exist** (verified — no "owner" string anywhere in that file). The README is also partly stale: three listed files are absent (`1-media-pipeline-foundation.html`, `architecture.svg`, `pipeline_flow.svg`) and two moved into `engine/` | Write the ownership table, or repoint the citations. Refresh the file list | Nothing; erodes the one-owner rule | Medium | open |
+| OBS-016 | **A second routing table exists in `competitive-analysis.md`** using the old layer numbering (Layer 1A / 1B / Layer A / Layer 3-as-sequence), contradicting this playbook | Delete it — the prompt owns its own input scope | Risk of mis-scoping a prompt | Medium | open |
+| OBS-017 | **Encode values were duplicated across five places.** **Narrowed by ADR-007 §5 + `test_config_delivery_targets_sync.py`**, which parses the machine-readable block of `delivery-targets.md` and asserts the contract's `output_encode` matches per TGT id — with a guard test that fails if a seventh citation is added without extending the check. The contract↔register edge is now automatic. **Still duplicated:** `quality-thresholds.md`, `src/pipeline/validation/thresholds.py` (`DEFAULT_THRESHOLDS`), and `style-contract.md` §10 prose | Extend the same drift-test approach to `thresholds.py`, or make it read the register. `quality-thresholds.md` already flags this as unsettled ("design question 5 will settle whether these reference TGT") — ADR-007 §5 answered it for the contract only | Nothing; guarantees future drift | Medium | open — narrowed |
+| OBS-023 | **The palette has six roles, and that number was a starting guess.** It was never checked against the material. Every role beyond what is needed costs contrast headroom and colour-vision separation — and the deuteranopia collision found in contract v3 is exactly the symptom of an over-specified palette | Count the maximum simultaneous states that must be distinguished on the busiest slide across all five decks, then lock the role count | Layer 6 | Medium | open |
+| OBS-024 | **Slide transitions sit in the theme layer as an animation default, but arguably belong to sequencing.** Left there because they are global and content-independent; the values are `null` and deferred | Revisit once one slide has run end-to-end. If per-slide variation turns out to be wanted, they move to Layer 8 | Layer 8 | Low | open |
+| OBS-021 | **Notation tokens may be mis-transcribed, attaching word timings to the wrong words.** Speech recognition renders "Pᵢ" and "Rⱼ" inconsistently ("P I", "pie", "PI"). Forced alignment attaches timings to whatever tokens the transcript contains, so a beat bound to "Rj" can fire on the wrong word. The overall word-error rate will not surface this — the errors are concentrated in exactly the notation-dense segments that matter most | Verification pass on notation-dense segments specifically, separate from the word-error-rate advisory check | Layer 8 accuracy | **High** | open |
+| OBS-022 | **Animation durations need a floor and an under-run policy.** When a bound phrase is shorter than the floor (e.g. 0.3 s), drawing a long arrow across it looks frantic. No rule exists for what happens then — compress, run into the following pause, or simplify | Define floor + under-run policy in the style contract. Pairs with OBS-008 | Layer 8 | **High** | open |
+| OBS-020 | **The duration row in `competitive-analysis.md` is not a like-for-like comparison** and reads as one. Original 120.1s is the full lecture; competitor 61.0s and ours 83.1s are trimmed demo samples of differing length. This misreading already produced one bad requirement (PROP-001) | Add a note to the row: durations are not comparable; do not infer pacing or content coverage from them | Risk of further false requirements | **High** | open |
+| OBS-018 | **Runtime path drift.** The style contract document states `config/style/global_style_contract.json`; the actual file is at `res/config/style/global_style_contract.json` | Correct the document | Anyone following the doc | Low | open |
+| OBS-019 | **Nothing read the style contract.** `services/config/` was an empty `__init__.py` | **Resolved by `phase2/config-mgmt`.** `loader.py` reads the contract from `DEFAULT_CONTRACT_PATH`, checks `schema_version`, migrates if needed, and validates through the `StyleContract` model; `resolver.py` flattens the selected theme into one token set. Note: this does **not** close OBS-006 — the v3-document / v1-payload mismatch is two valid strings and passes validation | — | — | **closed — phase2/config-mgmt** |
+| OBS-025 | **`docs/engine/architecture.md`'s Phase 2 table marks all eight Config Mgmt items "Completed: NOT STARTED"** while the same branch implements `loader.py`, `models.py`, `resolver.py` and four test suites. The docs commit landed before the implementation commit and the table was never updated | Update the Completed column before or immediately after merging `phase2/config-mgmt` | Nothing; the roadmap misreports project state | Medium | open |
+
+---
+
+## Summary
+
+| Priority | Open | Closed | Blocking |
+|---|---|---|---|
+| High | 9 | 2 | Layers 3, 6, 8 |
+| Medium | 8 | 3 | — |
+| Low | 3 | — | — |
+
+**Baseline: `main` after `phase2/config-mgmt` is merged.** Five items were
+closed or narrowed by that branch — OBS-011, OBS-013, OBS-014, OBS-017,
+OBS-019.
+
+**Nothing here blocks Layer 2**, whose work is already complete. The first items
+that must be resolved are OBS-005 through OBS-008 (before Layer 6 binds entities
+and Layer 8 builds beats) and OBS-013 (before Layer 3 produces manifests at
+scale).
+
+**Layer 1 status: 3 of 4 closed.** Only OBS-002 remains.
+
+### Closed
+
+| ID | Closed as | Date |
+|---|---|---|
+| OBS-001 | promoted → TGT-012, TGT-013 | 2026-08-18 |
+| OBS-003 | DEC-001 resolved — see note | 2026-08-18 |
+| OBS-004 | rejected — see note | 2026-08-18 |
+| OBS-011 | resolved by ADR-007 §2, §7 | 2026-08-18 |
+| OBS-019 | resolved by `phase2/config-mgmt` | 2026-08-18 |
+
+#### OBS-003 closure note — DEC-001 resolved
+
+**Path A confirmed.** Clean the original recording; the professor's voice is
+retained and narration timing is unchanged.
+
+**Consequence: forced alignment is a required component of Transcript
+Alignment, not optional.** Registered as an owned item.
+
+| Decision | Detail |
+|---|---|
+| **Layer 4 emits word-level timings for the entire transcript**, unconditionally | `words[]` with `start_s` / `end_s` is a **Required** field, not Observed. Once the aligner runs, every word is free — selective capture would cost more and put a decision in a facts-only layer |
+| **Layer 8 selects the word span** that binds to each visual action | Derives `t_start_s` and `duration_s` from it. Phrase identification is a Layer 8 decision, never a Layer 4 output — an aligner produces words, it cannot know that "from Pᵢ to Rⱼ" is one meaningful unit |
+| **Tooling** | `faster-whisper` with `word_timestamps=True`, on the 16 kHz speech-recognition path. Already a project dependency. WhisperX is the fallback if accuracy is insufficient on notation-dense segments |
+| **Audio path** | Alignment runs on the 16 kHz mono copy; the 48 kHz stereo master stays separate for delivery. Consistent with RC-003 |
+| **Accuracy** | Forced alignment is typically ±20–50 ms, inside the 80 ms sync-drift gate |
+
+**VGR-05 (word/phrase-level pacing) is unblocked.**
+
+**Worked example — why this matters.** Narration: *"Request edge: from Pᵢ to
+Rⱼ."* Layer 4 gives every word a start and end. Layer 8 binds beat `b02` (draw
+the request edge) to the span "from" → "j", giving start 13.35 s and duration
+**1.27 s** — because that is how long he took to say it. The duration is
+measured, never chosen. This is the concrete case against the style contract's
+fixed `state_motion.duration_s: 1.1` (OBS-008).
+
+#### OBS-004 closure note
+
+#### OBS-004 closure note
+
+PROP-001 is **rejected**, and the row stays in
+`findings-and-decisions.md` with this reasoning attached:
+
+> Origin observation (DIFF-006) compared a full lecture against two trimmed
+> demo samples — the competitor was not dropping content, they were showing a
+> portion of it. The underlying concern is also structurally precluded: with
+> narration content and timing fixed (the project invariant), and TGT-011
+> requiring the video to span the full transcript, seconds-per-concept is
+> inherited from the original lecture and cannot be traded for speed. Nobody
+> is shortening the lecture, and the constraints would not permit it.
+> Visual-timing concerns remain covered by VGR-05 (word/phrase-level pacing)
+> and VGR-07 (content coverage).
+
+**How it was found:** the Layer 1 review checkpoint — asking whether a
+requirement still makes sense given what the evidence actually says, rather
+than waiting for something downstream to break.
