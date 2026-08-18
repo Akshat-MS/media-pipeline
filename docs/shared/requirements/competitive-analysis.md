@@ -28,6 +28,27 @@ any target can be traced to what justified it.
 | Audio mean volume | −30.1 dB | −14.1 dB | −30.5 dB |
 | Audio peak | −0.6 dB | 0.0 dB | −1.1 dB |
 
+> ### ⚠ Durations are **not** comparable
+>
+> The three durations measure **different amounts of content**, deliberately:
+>
+> | | What it is |
+> |---|---|
+> | Original 120.1 s | The full lecture |
+> | Competitor 61.0 s | A trimmed demo sample |
+> | Ours 83.1 s | A trimmed demo sample, of different extent |
+>
+> The competitor was not dropping or rushing content — they trimmed a portion
+> to show as a sample, exactly as we did. **Do not infer pacing, content
+> coverage, or compression from this row.**
+>
+> This misreading already produced one bad requirement: PROP-001
+> (seconds-per-concept), since rejected. See
+> [`findings-and-decisions.md`](findings-and-decisions.md).
+>
+> Every other row *is* comparable — resolution, frame rate, codec, bitrate and
+> loudness are properties of the encoding and do not vary with clip length.
+
 Qualitative observations (visual grammar, dimensions used, semantic fidelity,
 text QC, pacing, coverage) remain in
 `Lecture_Alive_AI_CompetitiveAnalysis.xlsx` sheets 3 and 5.

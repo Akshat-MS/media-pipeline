@@ -35,6 +35,25 @@ volumedetect / frame sampling). Evidence is retained in
 | TGT-009 | Audio mean volume | −18 to −16 dB (~−16 LUFS) | Video Compose (mastering/normalization) | adopted |
 | TGT-010 | Audio peak ceiling | −1.0 dB | Video Compose (mastering/normalization) | adopted |
 | TGT-011 | Duration | Match full transcript length, no silent trimming | Sequence Mapping + Transcript Alignment | adopted |
+| TGT-012 | Internal frame generation rate | ≥ 24 fps | Rendering & Composing > HTML Build | adopted |
+| TGT-013 | Effective frame rate (unique frames per second) | ≥ 24, measured over active beat windows | Rendering & Composing > Video Compose | adopted |
+
+**Note on TGT-012 and TGT-013.** These exist because TGT-002 (export frame
+rate) can pass while the picture is still choppy — a 30 fps file made of 8
+unique frames per second reports 30 fps to `ffprobe`. Encoding cannot add
+motion detail that was never rendered.
+
+- **TGT-012 is a gate**, asserted from configuration *before* rendering starts.
+  The animation engine knows its own frame-generation rate; this is a config
+  assertion, not a measurement.
+- **TGT-013 is advisory** until real renders provide numbers to tune against,
+  then promoted to a gate. Measured by counting non-duplicate frames
+  (e.g. `ffmpeg -i out.mp4 -vf mpdecimate -loglevel debug -f null -`).
+- TGT-013 is measured **over active beat windows only**, so deliberately still
+  content is not penalised.
+
+Both enforce **RC-001** — see
+[`findings-and-decisions.md`](findings-and-decisions.md).
 
 **Note on TGT-011:** stated as a rule rather than a number because the target
 is relative to each lecture's transcript. It is still post-render checkable,
@@ -140,6 +159,27 @@ Wrapped in `SchemaEnvelope` per Phase 1's `models/envelope.py`.
         "property": "duration",
         "target": "match_transcript_no_trim",
         "owner": "sequence_mapping",
+        "status": "adopted"
+      },
+      {
+        "id": "TGT-012",
+        "property": "internal_frame_generation_fps",
+        "target": 24,
+        "comparator": "gte",
+        "owner": "render.html_build",
+        "enforcement": "gate",
+        "enforces": "RC-001",
+        "status": "adopted"
+      },
+      {
+        "id": "TGT-013",
+        "property": "effective_unique_fps",
+        "target": 24,
+        "comparator": "gte",
+        "measured_over": "active_beat_windows",
+        "owner": "render.video_compose",
+        "enforcement": "advisory",
+        "enforces": "RC-001",
         "status": "adopted"
       }
     ]

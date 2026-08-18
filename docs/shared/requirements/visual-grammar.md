@@ -108,7 +108,8 @@ component — see the note under each.
           "sequence_mapping"
         ],
         "status": "adopted",
-        "blocked_by": "DEC-001"
+        "unblocked_by": "DEC-001",
+        "word_timing_source": "forced_alignment"
       },
       {
         "id": "VGR-06",
