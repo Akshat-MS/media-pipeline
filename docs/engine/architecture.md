@@ -112,7 +112,8 @@ All seven decisions are locked to the single constraint governing this build: ma
 
 ## Phase 2 — Config Mgmt
 
-**Status:** design finalized. Implementation not yet started.
+**Status:** design finalized and **implemented** — `services/config/` built and
+tested, 36 passing tests across four suites.
 
 Eight design questions from `docs/engine/config-mgmt-handoff.md` § 3, all
 decided together in a single combined ADR rather than one per question.
@@ -127,15 +128,24 @@ decided together in a single combined ADR rather than one per question.
 
 | Item | Decision | Design Status | Completed |
 | --- | --- | --- | --- |
-| **2.1** Placement & module layout | `src/pipeline/services/config/`, flat: `loader.py` / `models.py` / `resolver.py` | **FINAL** | **NOT STARTED** |
-| **2.2** Theme resolution | Resolve once at load → flat token set; default `navy`; unknown theme name still fails loudly | **FINAL** | **NOT STARTED** |
-| **2.3** Validation model | All fields mandatory except `theme_selected` / `slide_transition.type` / declared fallbacks; fail loudly with field path | **FINAL** | **NOT STARTED** |
-| **2.4** Schema versioning | Contract-specific envelope (not `SchemaEnvelope`); no migration registered yet at `1.0.0` | **FINAL** | **NOT STARTED** |
-| **2.5** Encode-target ownership | `delivery-targets.md` remains owner; drift caught by a cross-check test, not runtime coupling | **FINAL** | **NOT STARTED** |
-| **2.6** Immutability & access | Plain `load_style_contract()` function, called once, passed explicitly — no singleton | **FINAL** | **NOT STARTED** |
-| **2.7** Override precedence | CLI arg → `PIPELINE_STYLE_THEME` env var → contract's `theme_selected` → navy floor; winning source logged | **FINAL** | **NOT STARTED** |
-| **2.8** Forward fit for Layer 4 | Loader stays style-contract-specific; revisit generalization once Layer 4 has a real schema | **FINAL** | **NOT STARTED** |
+| **2.1** Placement & module layout | `src/pipeline/services/config/`, flat: `loader.py` / `models.py` / `resolver.py` | **FINAL** | **DONE** — all three modules built |
+| **2.2** Theme resolution | Resolve once at load → flat token set; default `navy`; unknown theme name still fails loudly | **FINAL** | **DONE** — `resolve_theme()` returns `ResolvedStyleContract`; `KNOWN_THEMES` / `DEFAULT_THEME`; `ThemeResolutionError` on an unrecognised name (13 tests) |
+| **2.3** Validation model | All fields mandatory except `theme_selected` / `slide_transition.type` / declared fallbacks; fail loudly with field path | **FINAL** | **DONE** — `_StrictModel` base with `extra="forbid"` on every model (11 tests) |
+| **2.4** Schema versioning | Contract-specific envelope (not `SchemaEnvelope`); no migration registered yet at `1.0.0` | **FINAL** | **DONE** — `EXPECTED_SCHEMA_VERSION`; loader calls `migrate_to_latest()` only on a version mismatch |
+| **2.5** Encode-target ownership | `delivery-targets.md` remains owner; drift caught by a cross-check test, not runtime coupling | **FINAL** | **DONE** — `test_config_delivery_targets_sync.py` parses the register and asserts `output_encode` matches TGT-003…008, plus a guard test for uncovered citations (3 tests) |
+| **2.6** Immutability & access | Plain `load_style_contract()` function, called once, passed explicitly — no singleton | **FINAL** | **DONE** — plain function, `PIPELINE_STYLE_CONTRACT_PATH` override for tests, `ContractLoadError` wraps failures with the path (9 tests) |
+| **2.7** Override precedence | CLI arg → `PIPELINE_STYLE_THEME` env var → contract's `theme_selected` → navy floor; winning source logged | **FINAL** | **DONE** — `_select_theme()` implements the chain and logs the winning source |
+| **2.8** Forward fit for Layer 4 | Loader stays style-contract-specific; revisit generalization once Layer 4 has a real schema | **FINAL** | **DONE (by decision)** — deliberately nothing built; `ARTIFACT_TYPE` is pinned to `global_style_contract`. Revisit when Layer 4 has a real schema |
 
 **Legend:** same convention as the Phase 1 table above — *Design Status* is
 whether the decision is locked; *Completed* tracks actual implementation
 and updates as build steps land.
+
+**Test coverage:** 36 tests — `test_config_loader.py` (9),
+`test_config_models.py` (11), `test_config_resolver.py` (13),
+`test_config_delivery_targets_sync.py` (3).
+
+**Not yet wired.** Config Mgmt is built and tested in isolation; no pipeline
+stage calls `load_style_contract()` yet, because Rendering — its only real
+consumer — does not exist. The loader is the style contract's first runtime
+reader either way, which is what makes contract errors detectable at all.
