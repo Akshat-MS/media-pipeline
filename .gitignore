@@ -32,3 +32,13 @@ res/workdir/*
 Thumbs.db
 .coverage
 PR.md
+
+# Media — never versioned, wherever it lands. res/workdir/* already covers
+# the normal location; this is the safety net for anything dropped elsewhere.
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.m4a
+*.aac

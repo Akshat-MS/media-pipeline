@@ -102,3 +102,27 @@ information, it is to give what already exists somewhere to live.
 | **Why** | The instruction stated *what to do* but not *why*, so it was satisfied literally. A bare instruction is always available to be met in the cheapest way |
 | **The change** | Added the reason and a worked counter-example: *"A role name must state WHAT THE COLOUR MEANS… `blocked_waiting` is correct. `state_a` is NOT acceptable: it satisfies the instruction while carrying no meaning… If you cannot say what a colour means, it is not a role."* |
 | **Prompt-quality rule** | Rule 2 (give every rule its reason) |
+
+### PC-003 · Layer 4 · the notation flag that selected nothing
+
+| | |
+|---|---|
+| **Date** | 2026-08-19 |
+| **Rounds taken** | 1 — found on the first real run, not at review |
+| **What went wrong** | `mpk transcript build` flagged **0 of 64** segments as notation-bearing, in a transcript saying *semaphore* 8×, *mutex* 7× and *empty* 21×. The step-3 prompt received a transcript where the flag was false everywhere. A detector reporting zero is worse than no detector — it reads as "nothing to check" |
+| **Why** | The pattern was written against the deadlock decks (`P₁`, `Rⱼ`, `{…}`, `≤`) and V017 is bounded buffer. The prompt inherited a **deck-specific constant dressed up as a general rule** |
+| **The change** | Detection is driven from Layer 3's `entity_inventory` via `--terms-from`, **unioned with `--vocab`** — deck labels alone gave 3 terms and still matched nothing, because *semaphore* and *mutex* are spoken but never drawn. Matching tolerates recogniser mangling. `mpk transcript reflag` re-applies without re-transcribing. V017: 0 → 38 |
+| **What the prompt did anyway** | It noticed. Its own note: *"metadata.notation is false for all 64 segments, so no segment arrived notation_present; all 64 were read instead."* It distrusted its input and read everything. That behaviour was worth keeping and is now stated explicitly in step 3 |
+| **Prompt-quality rule** | Rule 2 (give every rule its reason). A pattern with no stated reason cannot be checked against a new deck — nobody could see it was the wrong vocabulary until it returned zero |
+
+### PC-004 · Layer 4 · a model reasoning from the deck over-corrects
+
+| | |
+|---|---|
+| **Date** | 2026-08-19 |
+| **Rounds taken** | 1 — caught by the human pass, exactly as designed |
+| **What went wrong** | At 01:59 the recogniser wrote "buff size"; the deck labels that node `BUFSIZE`, so the prompt proposed `buff size -> BUFSIZE`. On listening, the professor really does say two words. The correction would have put a symbol on screen that was never spoken |
+| **Why** | Not a prompt defect — a **limit**. A model reasoning from text and deck drifts toward what *should* have been said. It is the strongest available inference and it is still not evidence |
+| **The change** | None to the wording; v1.1 already forced `status: "proposed"` with `confirmed_by: null`. This is the entry that records **why that rule earns its cost.** Added step 5 (`mpk transcript apply`) so a human verdict has somewhere to land |
+| **The counter-evidence** | The same run found `next_produced` twice, which the human missed, and proposed `sell -> fill` while calling it its own weakest guess — confirmed on listening. Net: 5 agreements, 2 model-only finds, 1 model over-correction, 2 human-only finds. **Neither pass would have been sufficient alone** |
+| **Prompt-quality rule** | Rule 3 (one prompt, one kind of judgement) — proposing and confirming are different judgements, and only one of them can be done without ears |

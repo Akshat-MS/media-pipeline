@@ -522,6 +522,646 @@ def cmd_review_build(args):
           f"rendering from the embedded manifest", file=sys.stderr)
 
 
+
+# ════════════════════════════════════════════════════════════ transcript
+# Whisper's own vocabulary bias. Notation is where transcription fails, and
+# biasing the recogniser up front beats detecting the error afterwards —
+# so this is the cheapest place to act on OBS-021.
+DEFAULT_VOCAB = ("P1, P2, P3, Pn, Pi, R1, R2, R3, Rn, Rj, semaphore, mutex, "
+                 "bounded buffer, critical section, deadlock, BUFSIZE")
+
+# Symbolic notation, deck-independent: subscripts, P1/Rj forms, set braces,
+# relational and arrow operators.
+NOTATION_RE = re.compile(
+    r"[\u2080-\u2089\u1d62\u2c7c\u2099]|\b[PRp]\s?[0-9ijn]\b|[{}]|\u2264|\u2192|-->|\bP\s?sub\b")
+
+
+def terms_from_manifest(path: str) -> list[str]:
+    """Pull the deck's own vocabulary out of a Layer 3 manifest.
+
+    A hardcoded pattern only knows one deck's notation. The V017 run proved
+    it: the regex hunts P1/Rj — deadlock vocabulary — and flagged ZERO
+    segments in a transcript saying "semaphore" 8 times, "mutex" 7 and
+    "buff size" once. The deck already knows its own terms, so read them
+    from there instead of maintaining a regex per topic."""
+    try:
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception as exc:
+        die(f"could not read manifest {path}: {exc}")
+    d = d.get("payload", d)
+    terms: set[str] = set()
+
+    for e in (d.get("deck") or {}).get("entity_inventory") or []:
+        if e.get("label"):
+            terms.add(str(e["label"]).strip())
+
+    for sl in d.get("slides") or [d]:
+        for a in sl.get("assets") or []:
+            p = a.get("properties") or {}
+            for line in (p.get("lines") or []):
+                for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", line or ""):
+                    if tok.isupper() or re.search(r"[a-z][A-Z]|_", tok):
+                        terms.add(tok)          # BUFSIZE, next_produced, camelCase
+    return sorted(t for t in terms if len(t) > 1)
+
+
+def _fuzzy_term(t: str) -> str:
+    """A pattern that survives the ways a recogniser mangles an identifier.
+
+    V017 proved the need: the deck says BUFSIZE, the recogniser wrote
+    "buff size" — split in a different place than expected, with a doubled
+    letter. So allow a separator between ANY two characters, and allow any
+    character to repeat. Only for terms long enough that this stays specific."""
+    if len(t) < 5 or not t.isalpha():
+        return re.escape(t)
+    return r"[\s\-]?".join(re.escape(c) + "+" for c in t)
+
+
+def build_notation_matcher(terms: list[str]):
+    """Match symbolic notation, or any term we have declared we care about.
+
+    Two sources, both needed. The deck supplies identifiers (BUFSIZE,
+    next_produced); the vocabulary bias supplies the domain words (semaphore,
+    mutex, wait, signal) that never appear as slide text but carry the meaning.
+    Whatever we told the recogniser to listen for is, by definition, what we
+    need it to have got right."""
+    if not terms:
+        return lambda text: bool(NOTATION_RE.search(text or ""))
+    alts = sorted({_fuzzy_term(t) for t in terms if len(t) > 2},
+                  key=len, reverse=True)
+    term_re = re.compile(r"(?<![A-Za-z])(?:" + "|".join(alts) + r")(?![A-Za-z])",
+                         re.IGNORECASE)
+    return lambda text: bool(NOTATION_RE.search(text or "")
+                             or term_re.search(text or ""))
+
+
+def _split_vocab(v: str | None) -> list[str]:
+    """Vocabulary bias is a comma-separated string; multi-word phrases count."""
+    return [t.strip() for t in (v or "").split(",") if t.strip()]
+
+
+def cmd_transcript_build(args):
+    """Transcribe and force-align. Emits RAW ASR output — the verification
+    prompt turns this into the final transcript, exactly as `deck extract`
+    feeds the Layer 3 prompt."""
+    need("faster_whisper")
+    from faster_whisper import WhisperModel
+
+    vocab = args.vocab
+    if args.vocab_file:
+        vocab = Path(args.vocab_file).read_text(encoding="utf-8").strip()
+    deck_terms: list[str] = []
+    if args.terms_from:
+        deck_terms = terms_from_manifest(args.terms_from)
+        print(f"mpk: {len(deck_terms)} deck term(s) from "
+              f"{Path(args.terms_from).name} — notation detection will use them",
+              file=sys.stderr)
+        if vocab is None:
+            vocab = ", ".join(deck_terms)      # the deck is the better bias too
+    if vocab is None:
+        vocab = DEFAULT_VOCAB
+    # Everything we asked the recogniser to listen for is something we need it
+    # to have got right — so the bias list is also the flag list.
+    critical = sorted(set(deck_terms) | set(_split_vocab(vocab)))
+    is_notation = build_notation_matcher(critical)
+    print(f"mpk: {len(critical)} critical term(s) drive notation flagging",
+          file=sys.stderr)
+
+    print(f"mpk: loading model {args.model!r} ({args.compute}) …", file=sys.stderr)
+    try:
+        model = WhisperModel(args.model, device=args.device,
+                             compute_type=args.compute,
+                             download_root=args.model_dir or None)
+    except Exception as exc:
+        die(f"could not load model {args.model!r}: {type(exc).__name__}: {exc}\n"
+            f"       Models download from Hugging Face on first use. If the network\n"
+            f"       blocks that, fetch the model once elsewhere and point at it with\n"
+            f"       --model-dir, or pass a local path to --model.")
+
+    segments, info = model.transcribe(
+        args.file,
+        language=args.language,
+        word_timestamps=True,          # DEC-001: word timings are mandatory
+        vad_filter=not args.no_vad,
+        initial_prompt=vocab or None,
+        beam_size=args.beam,
+    )
+
+    segs, n_words = [], 0
+    for sg in segments:
+        words = [{"word": w.word.strip(), "start": round(w.start, 3),
+                  "end": round(w.end, 3),
+                  "probability": round(w.probability, 4)}
+                 for w in (sg.words or [])]
+        n_words += len(words)
+        low = [w for w in words if w["probability"] < args.low_conf]
+        flags = []
+        if not words:
+            flags.append({"code": "no_word_timings", "severity": "error",
+                          "note": "segment has no word-level timings; Layer 8 "
+                                  "cannot bind a beat inside it",
+                          "needs_eye_check": True})
+        if low:
+            flags.append({"code": "low_confidence_words", "severity": "warn",
+                          "note": f"{len(low)} word(s) below {args.low_conf} "
+                                  f"confidence: " + ", ".join(w["word"] for w in low[:6]),
+                          "needs_eye_check": True})
+        notation = is_notation(sg.text or "")
+        if notation:
+            flags.append({"code": "notation_present", "severity": "warn",
+                          "note": "contains notation or a deck term — confirm "
+                                  "it against the audio before trusting it "
+                                  "(OBS-021)",
+                          "needs_eye_check": True})
+        segs.append({"segment_id": f"t_{len(segs)+1:04d}",
+                     "start": round(sg.start, 3), "end": round(sg.end, 3),
+                     "text": (sg.text or "").strip(),
+                     "notation": notation,
+                     "avg_logprob": round(sg.avg_logprob, 4),
+                     "no_speech_prob": round(sg.no_speech_prob, 4),
+                     "words": words, "flags": flags})
+
+    pauses = [round(b["start"] - a["end"], 3)
+              for a, b in zip(segs, segs[1:]) if b["start"] - a["end"] >= args.pause]
+
+    out = {
+        "video_id": args.video_id or Path(args.file).stem,
+        "metadata": {
+            "source_file": Path(args.file).name,
+            "model": args.model, "device": args.device,
+            "compute_type": args.compute,
+            "language": info.language,
+            "language_probability": round(info.language_probability, 4),
+            "duration_s": round(info.duration, 3),
+            "granularity": "word",
+            "word_level_available": n_words > 0,
+            "word_count": n_words,
+            "vad_filter": not args.no_vad,
+            "vocab_bias": vocab,
+            "notation_terms": critical or None,
+            "notation_terms_source": (args.terms_from if args.terms_from
+                                      else "built-in symbolic pattern only"),
+            "pause_threshold_s": args.pause,
+            "pauses_over_threshold": len(pauses),
+            "longest_pause_s": max(pauses) if pauses else None,
+            "extraction_path": "mpk_transcript_build",
+            "mpk_version": __version__,
+            "note": "RAW ASR output. Verbatim — not cleaned, summarised or "
+                    "reordered. The narration is fixed (project invariant); "
+                    "this records when each word was said, nothing more.",
+        },
+        "segments": segs,
+    }
+    emit(out, args.out)
+    print(f"mpk: {len(segs)} segments, {n_words} words, "
+          f"{sum(1 for s in segs if s['notation'])} notation-bearing, "
+          f"{len(pauses)} pauses over {args.pause}s", file=sys.stderr)
+
+
+def _vtt(t) -> str:
+    def ts(s):
+        h, r = divmod(float(s), 3600); m, sec = divmod(r, 60)
+        return f"{int(h):02d}:{int(m):02d}:{sec:06.3f}"
+    lines = ["WEBVTT", ""]
+    for i, sg in enumerate(t.get("segments", []), 1):
+        lines += [str(i), f"{ts(sg['start'])} --> {ts(sg['end'])}",
+                  sg.get("text", "").strip(), ""]
+    return "\n".join(lines)
+
+
+def _txt(t) -> str:
+    """The stamped, paste-able form — a timestamp line then its text, the way a
+    transcript is read and corrected by hand."""
+    def mmss(s):
+        m, sec = divmod(int(float(s)), 60)
+        return f"{m:02d}:{sec:02d}"
+    out = []
+    for sg in t.get("segments", []):
+        out.append(mmss(sg["start"]))
+        out.append(sg.get("text", "").strip())
+    return "\n".join(out) + "\n"
+
+
+def _audio_data_uri(path: str) -> str:
+    import base64, mimetypes
+    mt = mimetypes.guess_type(path)[0] or "audio/mpeg"
+    b = Path(path).read_bytes()
+    print(f"mpk: embedding {len(b)/1e6:.1f} MB of audio "
+          f"({len(b)*4//3/1e6:.1f} MB once base64-encoded)", file=sys.stderr)
+    return f"data:{mt};base64," + base64.b64encode(b).decode("ascii")
+
+
+_TRANSCRIPT_BLOCK = re.compile(
+    r'(<script type="application/json" id="transcript">\n).*?(\n</script>)', re.DOTALL)
+_AUDIO_BLOCK = re.compile(
+    r'(<script type="text/plain" id="audio-data">).*?(</script>)', re.DOTALL)
+
+
+def cmd_transcript_export(args):
+    raw = Path(args.file).read_text(encoding="utf-8")
+    try:
+        t = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        die(f"{args.file} is not valid JSON: {exc}")
+    t = t.get("payload", t)
+
+    fmt = args.format
+    if fmt == "json":
+        Path(args.out).write_text(json.dumps(t, indent=2, ensure_ascii=False),
+                                  encoding="utf-8")
+    elif fmt == "vtt":
+        Path(args.out).write_text(_vtt(t), encoding="utf-8")
+    elif fmt == "txt":
+        Path(args.out).write_text(_txt(t), encoding="utf-8")
+    elif fmt == "html":
+        tpl = resolve_template(args.template or "transcript-review").read_text(
+            encoding="utf-8")
+        html, n = _TRANSCRIPT_BLOCK.subn(
+            lambda m: m.group(1) + json.dumps(t, indent=1, ensure_ascii=False)
+            + m.group(2), tpl)
+        if n != 1:
+            die("expected exactly one transcript block in the template")
+        if args.audio:
+            if not Path(args.audio).exists():
+                die(f"audio not found: {args.audio}")
+            uri = _audio_data_uri(args.audio)
+            html, n = _AUDIO_BLOCK.subn(lambda m: m.group(1) + uri + m.group(2), html)
+            if n != 1:
+                die("expected exactly one audio block in the template")
+        else:
+            print("mpk: no --audio given — the page will render but timestamps "
+                  "will not play", file=sys.stderr)
+        Path(args.out).write_text(html, encoding="utf-8")
+    else:
+        die(f"unknown format {fmt!r}")
+    print(f"wrote {args.out}  ({Path(args.out).stat().st_size:,} bytes, {fmt})",
+          file=sys.stderr)
+
+
+def cmd_transcript_reflag(args):
+    """Re-apply notation detection to an existing transcript.
+
+    Transcribing again costs minutes; re-flagging costs nothing. Use this when
+    the deck terms change, or when a transcript was built before its Layer 3
+    manifest existed."""
+    raw = Path(args.file).read_text(encoding="utf-8")
+    try:
+        t = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        die(f"{args.file} is not valid JSON: {exc}")
+    t = t.get("payload", t)
+    terms = sorted(set(terms_from_manifest(args.terms_from) if args.terms_from else [])
+                   | set(_split_vocab(args.terms
+                                      or (t.get("metadata") or {}).get("vocab_bias"))))
+    is_notation = build_notation_matcher(terms)
+
+    before = sum(1 for s_ in t.get("segments", []) if s_.get("notation"))
+    changed = 0
+    for s_ in t.get("segments", []):
+        was, now = bool(s_.get("notation")), is_notation(s_.get("text", ""))
+        if was != now:
+            changed += 1
+        s_["notation"] = now
+        s_["flags"] = [f for f in (s_.get("flags") or [])
+                       if f.get("code") != "notation_present"]
+        if now:
+            s_["flags"].append({
+                "code": "notation_present", "severity": "warn",
+                "note": "contains notation or a deck term — confirm it against "
+                        "the audio before trusting it (OBS-021)",
+                "needs_eye_check": True})
+    t.setdefault("metadata", {})
+    t["metadata"]["notation_terms"] = terms or None
+    t["metadata"]["notation_terms_source"] = (args.terms_from if args.terms_from
+                                              else "built-in symbolic pattern only")
+    after = sum(1 for s_ in t.get("segments", []) if s_.get("notation"))
+    emit(t, args.out)
+    print(f"mpk: notation-bearing {before} -> {after} ({changed} segment(s) "
+          f"changed) using {len(terms)} deck term(s)", file=sys.stderr)
+
+
+# ── the review file ────────────────────────────────────────────────────────
+#
+# A human types this while listening, so it has to be typeable: one line,
+# three fields, pipe-separated.
+#
+#     MM:SS | kind | comment
+#
+# kinds:  fix    heard -> should be
+#         check  needs a second look; states what to look at
+#         ok     listened, correct as transcribed
+#         ask    cannot decide; needs someone else
+#         skim   deliberately not listened to — a stated gap, not a verdict
+#
+# `all` in the time column applies to the whole transcript. Blank lines and
+# lines beginning with # are ignored, as are continuation lines (a leading
+# pipe), which exist so a long comment can wrap without breaking the format.
+
+_REVIEW_KINDS = {"fix", "check", "ok", "ask", "skim"}
+_ARROW = re.compile(r"\s*->\s*")
+_BRACKET = re.compile(r"\s*\[[^\]]*\]\s*$")
+
+
+def _parse_clock(tok: str) -> float | None:
+    """'06:28' or '6:28' or '388.1' -> seconds. 'all' -> None."""
+    tok = tok.strip()
+    if tok.lower() == "all":
+        return None
+    if ":" in tok:
+        parts = tok.split(":")
+        try:
+            nums = [float(p) for p in parts]
+        except ValueError:
+            die(f"cannot read a time from {tok!r}")
+        if len(nums) == 2:
+            return nums[0] * 60 + nums[1]
+        if len(nums) == 3:
+            return nums[0] * 3600 + nums[1] * 60 + nums[2]
+        die(f"cannot read a time from {tok!r}")
+    try:
+        return float(tok)
+    except ValueError:
+        die(f"cannot read a time from {tok!r}")
+
+
+def parse_review(path: str) -> list[dict]:
+    """Read a review file into a list of comments. Refuses to guess."""
+    out: list[dict] = []
+    for lineno, raw in enumerate(Path(path).read_text(encoding="utf-8")
+                                 .splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("|"):                      # wrapped continuation
+            if not out:
+                die(f"{path}:{lineno}: continuation line before any comment")
+            out[-1]["comment"] += " " + line.lstrip("|").strip()
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) < 3:
+            die(f"{path}:{lineno}: expected 'MM:SS | kind | comment', got {raw!r}")
+        when, kind, comment = parts[0], parts[1].lower(), "|".join(parts[2:]).strip()
+        if kind not in _REVIEW_KINDS:
+            die(f"{path}:{lineno}: unknown kind {kind!r}. "
+                f"Use one of: {', '.join(sorted(_REVIEW_KINDS))}")
+        out.append({"line": lineno, "at": _parse_clock(when), "at_text": when,
+                    "kind": kind, "comment": comment})
+    if not out:
+        die(f"{path} has no review lines")
+    return out
+
+
+def _seg_at(segs: list[dict], t: float) -> dict | None:
+    """The segment containing t, or the nearest one if t lands in a pause.
+
+    A reviewer reads the clock off a player, so the time can fall a little
+    outside the segment it refers to — and pause comments land in silence by
+    definition. Nearest-by-distance is the only sane reading."""
+    for s in segs:
+        if s.get("start", 0) <= t <= s.get("end", 0):
+            return s
+    if not segs:
+        return None
+    return min(segs, key=lambda s: min(abs(s.get("start", 0) - t),
+                                       abs(s.get("end", 0) - t)))
+
+
+def _norm(w: str) -> str:
+    return re.sub(r"[^a-z0-9_]", "", w.lower())
+
+
+def _find_run(words: list[dict], phrase: str) -> tuple[int, int] | None:
+    """Locate a consecutive run of words matching `phrase`. Returns [i, j).
+
+    Matching is on letters and digits only, and word-for-word first. If that
+    fails it falls back to comparing the phrase with its spaces removed against
+    a joined run of tokens — because a reviewer writes what they read on the
+    page ("water-independent") while the recogniser may hold it as two tokens
+    ("water", "-independent"). Requiring the reviewer to know the tokenisation
+    would make the review file unwritable."""
+    have = [_norm(w.get("word", "")) for w in words]
+    want = [_norm(x) for x in phrase.split() if _norm(x)]
+    if not want:
+        return None
+    for i in range(len(have) - len(want) + 1):
+        if have[i:i + len(want)] == want:
+            return i, i + len(want)
+    glued = "".join(want)                      # tokenisation-blind fallback
+    for i in range(len(have)):
+        acc = ""
+        for j in range(i, min(i + 8, len(have))):
+            acc += have[j]
+            if acc == glued:
+                return i, j + 1
+            if len(acc) > len(glued):
+                break
+    return None
+
+
+def apply_fix(seg: dict, heard: str, should_be: str) -> dict:
+    """Replace a run of words. Timings are preserved, never invented.
+
+    The audio did not change — only our label for it. So the replacement spans
+    exactly the first token's start to the last token's end, and no interior
+    boundary is created. When several words collapse into one (\"sum of 4\" ->
+    \"semaphore\"), the merged word owns the whole span; when one word becomes
+    several, they share it evenly, which is a guess and is flagged as one."""
+    words = seg.get("words") or []
+    run = _find_run(words, heard)
+    if run is None:
+        return {"ok": False,
+                "why": f"cannot find {heard!r} in {seg.get('segment_id', '?')}"}
+    i, j = run
+    start, end = words[i]["start"], words[j - 1]["end"]
+    probs = [w.get("probability", 0) for w in words[i:j]]
+    new_tokens = should_be.split()
+    # Carry trailing punctuation across. A reviewer writes "sum of 4 ->
+    # semaphore" while the token is "4." — dropping the full stop would join
+    # two sentences, and sentence boundaries are what Layer 8 reads to find
+    # where one idea ends.
+    tail = re.search(r"[.,;:?!]+$", words[j - 1].get("word", ""))
+    if tail and not re.search(r"[.,;:?!]+$", new_tokens[-1]):
+        new_tokens[-1] += tail.group(0)
+    if len(new_tokens) == 1:
+        replacement = [{"word": new_tokens[0], "start": start, "end": end,
+                        "probability": min(probs) if probs else None,
+                        "corrected": True}]
+        even = False
+    else:
+        step = (end - start) / len(new_tokens)
+        replacement = [{"word": tok,
+                        "start": round(start + k * step, 2),
+                        "end": round(start + (k + 1) * step, 2),
+                        "probability": min(probs) if probs else None,
+                        "corrected": True, "timing_estimated": True}
+                       for k, tok in enumerate(new_tokens)]
+        even = True
+    seg["words"] = words[:i] + replacement + words[j:]
+    seg["text"] = " ".join(w.get("word", "") for w in seg["words"]).strip()
+    return {"ok": True, "start": start, "end": end, "n_before": j - i,
+            "n_after": len(new_tokens), "timing_estimated": even}
+
+
+def cmd_transcript_apply(args):
+    """Apply a human review file to a transcript.
+
+    This is the step that turns recorded decisions into the artifact Layer 8
+    reads. Everything a human could not settle is carried forward as an open
+    question rather than dropped — a review comment that vanishes is worse
+    than one that was never written."""
+    raw = Path(args.file).read_text(encoding="utf-8")
+    try:
+        t = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        die(f"{args.file} is not valid JSON: {exc}")
+    t = t.get("payload", t)
+    segs = t.get("segments") or []
+    if not segs:
+        die(f"{args.file} has no segments")
+
+    review = parse_review(args.review)
+    who = args.by
+    applied, failed, carried, coverage = [], [], [], None
+
+    for c in review:
+        if c["at"] is None:                       # the 'all' line
+            coverage = c
+            continue
+        seg = _seg_at(segs, c["at"])
+        if seg is None:
+            failed.append({**c, "why": "no segment near that time"})
+            continue
+        sid = seg.get("segment_id", "?")
+
+        if c["kind"] == "fix":
+            body = _BRACKET.sub("", c["comment"])
+            if not _ARROW.search(body):
+                failed.append({**c, "why": "a fix line needs 'heard -> should be'"})
+                continue
+            heard, should_be = _ARROW.split(body, 1)
+            res = apply_fix(seg, heard.strip(), should_be.strip())
+            if not res["ok"]:
+                # A reviewer reads the clock off a player, and a segment
+                # boundary can fall mid-phrase. Look either side before
+                # declaring the line unusable.
+                k = segs.index(seg)
+                for n in (k - 2, k - 1, k + 1, k + 2):
+                    if 0 <= n < len(segs):
+                        alt = apply_fix(segs[n], heard.strip(), should_be.strip())
+                        if alt["ok"]:
+                            seg, sid, res = segs[n], segs[n].get("segment_id", "?"), alt
+                            res["moved"] = True
+                            break
+            if not res["ok"]:
+                failed.append({**c, "why": res["why"]})
+                continue
+            seg.setdefault("corrections", []).append({
+                "from": heard.strip(), "to": should_be.strip(),
+                "span": {"start": res["start"], "end": res["end"],
+                         "note": "merged token spans first token start to last "
+                                 "token end; no interior boundary invented"
+                                 if not res["timing_estimated"] else
+                                 "one token expanded to several; interior "
+                                 "boundaries are evenly spaced ESTIMATES"},
+                "basis": f"human review, {args.review}:{c['line']}",
+                "status": "confirmed", "confirmed_by": who,
+                "confirmed_how": "listened in the review page"})
+            applied.append({**c, "segment_id": sid, **res})
+
+        elif c["kind"] in ("check", "ask"):
+            seg.setdefault("flags", []).append({
+                "code": f"open_question_{c['kind']}", "severity": "warn",
+                "note": f"{c['comment']}  [reviewer {who}, "
+                        f"{args.review}:{c['line']}]",
+                "needs_eye_check": True, "raised_at_s": c["at"]})
+            carried.append({**c, "segment_id": sid})
+
+        elif c["kind"] == "ok":
+            seg["reviewed"] = {"by": who, "verdict": "correct as transcribed",
+                               "note": c["comment"]}
+            seg["flags"] = [f for f in (seg.get("flags") or [])
+                            if f.get("code") != "low_confidence_words"]
+
+        elif c["kind"] == "skim":
+            seg.setdefault("flags", []).append({
+                "code": "not_reviewed", "severity": "info",
+                "note": f"{c['comment']}  [reviewer {who}]",
+                "needs_eye_check": True})
+
+    md = t.setdefault("metadata", {})
+    md["extraction_path"] = md.get("extraction_path", "") + "+review_applied"
+    md["review_file"] = args.review
+    md["reviewed_by"] = who
+    md["corrections_applied"] = len(applied)
+    md["open_questions"] = len(carried)
+    md["review_coverage"] = (
+        {"kind": coverage["kind"], "note": coverage["comment"]} if coverage
+        else {"kind": "unstated",
+              "note": "the review file has no 'all' line, so coverage of the "
+                      "unlisted segments is unknown"})
+    md["note"] = ("Human-reviewed transcript. Corrections are status "
+                  "'confirmed' — a person listened. Timings were never altered: "
+                  "a replacement spans exactly what it replaced. Open questions "
+                  "from the review are carried as flags, not resolved here.")
+
+    emit(t, args.out)
+    print(f"mpk: {len(applied)} correction(s) applied, {len(carried)} open "
+          f"question(s) carried, {len(failed)} line(s) FAILED", file=sys.stderr)
+    for a in applied:
+        print(f"  ok    {a['at_text']:>6}  {a['segment_id']}  "
+              f"{a['n_before']}->{a['n_after']} word(s)"
+              + ("  [timing estimated]" if a["timing_estimated"] else ""),
+              file=sys.stderr)
+    for c in carried:
+        print(f"  open  {c['at_text']:>6}  {c['segment_id']}  {c['kind']}",
+              file=sys.stderr)
+    for f in failed:
+        print(f"  FAIL  {f['at_text']:>6}  line {f['line']}: {f['why']}",
+              file=sys.stderr)
+    if failed and not args.keep_going:
+        die(f"{len(failed)} review line(s) could not be applied. Fix them, or "
+            f"pass --keep-going to write the transcript without them.")
+
+
+def cmd_transcript_check(args):
+    raw = Path(args.file).read_text(encoding="utf-8")
+    try:
+        t = json.loads(raw).get("payload", json.loads(raw))
+    except json.JSONDecodeError as exc:
+        die(f"{args.file} is not valid JSON: {exc}")
+    segs = t.get("segments", [])
+    problems, notes = [], []
+    if not segs:
+        problems.append("no segments")
+    n_words = sum(len(s.get("words") or []) for s in segs)
+    if n_words == 0:
+        problems.append("no word-level timings anywhere — VGR-05 cannot be met "
+                        "and Layer 8 has nothing to bind to")
+    for s in segs:
+        sid = s.get("segment_id", "?")
+        if not (s.get("words") or []):
+            notes.append(f"{sid}: no word timings")
+        for w in (s.get("words") or []):
+            if w.get("start") is None or w.get("end") is None:
+                problems.append(f"{sid}: word {w.get('word')!r} missing a timing")
+            elif w["end"] < w["start"]:
+                problems.append(f"{sid}: word {w.get('word')!r} ends before it starts")
+    for a, b in zip(segs, segs[1:]):
+        if b.get("start", 0) < a.get("end", 0):
+            notes.append(f"{a.get('segment_id')} overlaps {b.get('segment_id')}")
+    notation = [s for s in segs if s.get("notation")]
+    print(f"segments: {len(segs)}  words: {n_words}  "
+          f"notation-bearing: {len(notation)}")
+    for p_ in problems:
+        print(f"  FAIL  {p_}")
+    for n_ in notes[:20]:
+        print(f"  note  {n_}")
+    if len(notes) > 20:
+        print(f"  note  … and {len(notes)-20} more")
+    print(f"\n{len(problems)} failure(s), {len(notes)} note(s)")
+    sys.exit(1 if problems else 0)
+
+
 # ════════════════════════════════════════════════════════════ audio / video
 def _ff(cmd: list[str]) -> str:
     return subprocess.run(cmd, capture_output=True, text=True).stdout
@@ -720,6 +1360,70 @@ def build_parser():
     c.set_defaults(fn=cmd_review_build)
     c = gs.add_parser("templates", help="list available review templates")
     c.set_defaults(fn=cmd_review_templates)
+
+    # ---- transcript
+    g = groups.add_parser("transcript",
+                          help="transcribe, align, verify and export the timeline")
+    gs = g.add_subparsers(dest="cmd", metavar="<command>")
+
+    c = gs.add_parser("build", help="audio -> raw ASR JSON with word timings")
+    c.add_argument("file", help="audio or video file (16 kHz mono is enough)")
+    c.add_argument("--out", "-o", help="write JSON here (default stdout)")
+    c.add_argument("--video-id", help="id for the transcript (default: filename stem)")
+    c.add_argument("--model", default="small",
+                   help="tiny | base | small | medium | large-v3 (default: small)")
+    c.add_argument("--device", default="cpu")
+    c.add_argument("--compute", default="int8", help="int8 | float16 | float32")
+    c.add_argument("--language", default="en")
+    c.add_argument("--beam", type=int, default=5)
+    c.add_argument("--pause", type=float, default=1.0,
+                   help="report gaps at or above this many seconds (default 1.0)")
+    c.add_argument("--low-conf", type=float, default=0.55,
+                   help="flag words below this probability (default 0.55)")
+    c.add_argument("--no-vad", action="store_true",
+                   help="disable voice-activity filtering")
+    c.add_argument("--vocab", help="comma-separated terms to bias the recogniser")
+    c.add_argument("--vocab-file",
+                   help="file of terms — e.g. built from Layer 3's entity_inventory")
+    c.add_argument("--terms-from", metavar="MANIFEST",
+                   help="Layer 3 manifest — its entity_inventory and deck terms "
+                        "drive notation detection, and the vocabulary bias when "
+                        "--vocab is not given")
+    c.add_argument("--model-dir", help="local model cache (offline hosts)")
+    c.set_defaults(fn=cmd_transcript_build)
+
+    c = gs.add_parser("export", help="transcript -> json | html | vtt | txt")
+    c.add_argument("file")
+    c.add_argument("--format", "-f", default="html",
+                   choices=["json", "html", "vtt", "txt"])
+    c.add_argument("--out", "-o", required=True)
+    c.add_argument("--audio", help="embed this audio so timestamps play (html only)")
+    c.add_argument("--template", "-t", help="override transcript-review")
+    c.set_defaults(fn=cmd_transcript_export)
+
+    c = gs.add_parser("reflag",
+                      help="re-apply notation detection without re-transcribing")
+    c.add_argument("file")
+    c.add_argument("--terms-from", metavar="MANIFEST", help="Layer 3 manifest")
+    c.add_argument("--terms", help="extra comma-separated terms (default: the "
+                                   "transcript's own vocab_bias)")
+    c.add_argument("--out", "-o", required=True)
+    c.set_defaults(fn=cmd_transcript_reflag)
+
+    c = gs.add_parser("apply",
+                      help="apply a human review file -> the final transcript")
+    c.add_argument("file", help="the transcript to correct")
+    c.add_argument("--review", "-r", required=True,
+                   metavar="REVIEW.txt", help="the review file (MM:SS | kind | comment)")
+    c.add_argument("--by", required=True, metavar="NAME",
+                   help="who listened — recorded as confirmed_by on every fix")
+    c.add_argument("--keep-going", action="store_true",
+                   help="write the transcript even if some review lines fail")
+    c.add_argument("--out", "-o", required=True)
+    c.set_defaults(fn=cmd_transcript_apply)
+
+    c = gs.add_parser("check", help="validate a transcript's timings")
+    c.add_argument("file"); c.set_defaults(fn=cmd_transcript_check)
 
     # ---- audio
     g = groups.add_parser("audio", help="audio extraction and measurement")

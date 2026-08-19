@@ -53,6 +53,15 @@ attached. See `README.md` §7.
 | Design decisions workbook | `docs/shared/workbooks/design-decisions.xlsx` | xlsx | 1 | provenance only | project | — | current |
 | V017 deck, 5 slides | `res/inputs/V017-bounded-buffer.pptx` | pptx | source + `mpk deck merge` | 3 | per video | v2 | **not tracked** |
 | V017 raw shape tree | `res/workdir/v017.raw.json` | JSON | `mpk deck extract` | 3 | per video | v1 | **not tracked** |
+| V017 raw ASR | `res/workdir/v017.asr.json` | JSON | `mpk transcript build` | 4 | per video | v1 | **not tracked** |
+| V017 step-3 proposals | `res/workdir/v017.verified.json` | JSON | Layer 4 prompt | 4 step 5 | per video | v1 | **not tracked** |
+| V017 human review | `res/workdir/v017.review.txt` | text | **a human, listening** | `mpk transcript apply` | per video | v1 | **not tracked** |
+| **V017 narration timeline** | `res/workdir/v017.transcript.json` | JSON | `mpk transcript apply` | **5, 8** | per video | v1 | **not tracked** |
+| V017 transcript review page | `res/workdir/v017.transcript.html` | HTML | `mpk transcript export` | human review | per video | v1 | **not tracked** |
+| Audio master, 48 kHz stereo | `res/workdir/<v>-master.wav` | wav | `mpk audio extract` | 7, final mux | per video | — | **not tracked** |
+| Audio ASR copy, 16 kHz mono | `res/workdir/<v>-asr.wav` | wav | `mpk audio asr` | 4 | per video | — | **not tracked** |
+| Raw ASR output | `res/workdir/<v>.asr.json` | JSON | `mpk transcript build` | 4 (verify) | per video | — | **not tracked** |
+| Narration timeline | `res/workdir/<v>.transcript.json` | JSON | 4 | 5, 8 | per video | — | **not tracked** |
 
 **`res/` is gitignored per-job data** (`res/inputs/*`, `res/workdir/*`,
 `res/outputs/*` — folders kept via `.gitkeep`). Decks, extractions, renders and
@@ -92,11 +101,12 @@ them.
 | **mpk** — Media Pipeline Kit | `tools/mpk.py` | Deterministic CLI: deck extract/normalize/merge/render, review build, audio and video probes, manifest check |
 | Review templates | `tools/templates/` | One page per review kind. `mpk review templates` lists them; `mpk review build -t <name>` picks one |
 | ↳ Slide review | `tools/templates/slide-review.html` | Layer 3's review page — its embedded JS renders the manifest. `mpk review build` only injects data |
+| ↳ Transcript review | `tools/templates/transcript-review.html` | Layer 4's page — two-column time \| text, audio embedded, click a word to play just that word |
 
-**Planned templates**, as their layers are written: `transcript-review` (Layer 4),
-`vocabulary-review` (Layer 6), `sequence-player` (Layer 8 — the beat sheet with
-transport, caption bar and speed control, per the dry run). Each is a template
-filled with data, never a second renderer.
+**Planned templates**, as their layers are written: `vocabulary-review`
+(Layer 6), `sequence-player` (Layer 8 — the beat sheet with transport, caption
+bar and speed control, per the dry run). Each is a template filled with data,
+never a second renderer.
 | Gap specimens | `docs/shared/specimen/issues-specimen/` | Rendered evidence for each Layer 2 defect found (background, grid, legibility, math, notation, palette) |
 
 ### Superseded by this playbook

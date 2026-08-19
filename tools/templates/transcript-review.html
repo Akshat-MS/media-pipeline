@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Transcript review — Layer 4 narration timeline</title>
+<style>
+:root{--bg:#0f1524;--pn:#151d31;--ln:#26314b;--tx:#e8edf7;--t2:#a8b6d2;--dm:#6a7898;
+--ok:#3FD0C9;--wn:#F2A33C;--bd:#FF6B6B;--sm:#B79CF5;--pr:#7FB2F0;--now:#FFD84D}
+*{box-sizing:border-box}
+body{margin:0;padding:22px 20px 80px;background:var(--bg);color:var(--tx);
+font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px;font-weight:650}
+.sub{color:var(--t2);font-size:13px;margin-bottom:16px}.sub b{color:var(--tx)}
+.counts{display:flex;flex-wrap:wrap;gap:20px;padding:12px 16px;margin-bottom:14px;
+background:var(--pn);border:1px solid var(--ln);border-radius:8px;font-size:13px;color:var(--t2)}
+.counts b{color:var(--tx);font-size:16px;font-weight:650}
+.counts .a b{color:var(--wn)}
+.player{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0 12px;
+border-bottom:1px solid var(--ln);margin-bottom:14px}
+audio{width:100%;height:36px}
+.bar{margin:10px 0 0;font-size:13px;color:var(--t2);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.bar label{cursor:pointer;user-select:none}
+.bar .hint{color:var(--dm);font-size:12px;margin-left:auto}
+table{width:100%;border-collapse:collapse;background:var(--pn);
+border:1px solid var(--ln);border-radius:8px;overflow:hidden}
+td{padding:11px 13px;border-bottom:1px solid var(--ln);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.t{width:74px;white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;
+color:var(--pr);cursor:pointer;user-select:none}
+td.t:hover{color:var(--now);text-decoration:underline}
+tr.seg.notation td.t{border-left:3px solid var(--wn);padding-left:10px}
+tr.seg.active{background:rgba(127,178,240,.09)}
+body.only-notation tr.seg:not(.notation){display:none}
+body.only-notation tr.pause{display:none}
+tr.pause td{background:rgba(242,163,60,.07);color:var(--wn);font-size:12px;
+font-family:ui-monospace,Menlo,monospace;text-align:center;letter-spacing:.04em}
+.w{cursor:pointer;border-radius:3px;padding:0 1px}
+.w:hover{background:rgba(255,216,77,.22)}
+.w.now{background:var(--now);color:#14181f;font-weight:600}
+.flags{margin-top:6px}
+.f{font-size:11.5px;padding-left:14px;position:relative;line-height:1.45;margin-bottom:2px}
+.f:before{content:"●";position:absolute;left:0;top:0;font-size:8px}
+.f-warn,.f-warn:before{color:var(--wn)}.f-error,.f-error:before{color:var(--bd)}
+.f-info:before{color:var(--dm)}.f-info{color:var(--t2)}
+.f-ok,.f-ok:before{color:var(--ok)}
+h3{font-size:12px;margin:26px 0 8px;color:var(--t2);text-transform:uppercase;
+letter-spacing:.08em;font-weight:600}
+.note{font-size:13px;color:var(--t2);background:var(--pn);border:1px solid var(--ln);
+border-radius:8px;padding:12px 16px}
+footer{margin-top:32px;color:var(--dm);font-size:11.5px;line-height:1.6}
+</style></head><body><div class="wrap" id="app"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     THE TRANSCRIPT. Replace the contents of this block and change nothing
+     else. The page renders whatever is here, so the two cannot disagree.
+     ══════════════════════════════════════════════════════════════════════ -->
+<script type="application/json" id="transcript">
+{"video_id":"REPLACE_ME","metadata":{},"segments":[]}
+</script>
+
+<!-- The audio, as a data: URI. Empty means no audio was embedded — the page
+     still renders, timestamps just cannot play. -->
+<script type="text/plain" id="audio-data"></script>
+
+<script>
+const T = JSON.parse(document.getElementById('transcript').textContent);
+const AUDIO = document.getElementById('audio-data').textContent.trim();
+const e = s => s==null?'':String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mmss = s => {const m=Math.floor(s/60),x=Math.floor(s%60);
+  return String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');};
+
+const SEGS = T.segments || [];
+const META = T.metadata || {};
+const PAUSE_MIN = META.pause_threshold_s ?? 1.0;
+// A segment is notation-bearing when the extractor said so, or when its text
+// still looks like notation. Both, because a missed flag is worse than a
+// false positive here — the whole point is not to skip one.
+const NOTATION_RE = /[₀-₉ᵢⱼₙ]|\b[PRp]\s?[0-9ijn]\b|[{}]|≤|→|-->|\bP\s?sub\b/;
+const isNotation = s => !!s.notation || NOTATION_RE.test(s.text || '');
+
+const allWords = SEGS.flatMap(s => (s.words || []).map(w => ({...w, seg: s})));
+const flagged = SEGS.filter(s => (s.flags || []).some(f => ['warn','error'].includes(f.severity)));
+
+function segRow(s, i) {
+  const words = (s.words || []);
+  const body = words.length
+    ? words.map((w, k) => `<span class="w" data-s="${w.start}" data-e="${w.end}"
+        title="${mmss(w.start)}–${mmss(w.end)}  ·  click to play just this word"
+        >${e(w.word ?? w.text ?? '')}</span>`).join(' ')
+    : e(s.text);
+  const flags = (s.flags || []).map(f =>
+    `<div class="f f-${e(f.severity||'info')}">${e(f.note||f.code)}</div>`).join('');
+  return `<tr class="seg${isNotation(s)?' notation':''}" id="seg-${i}" data-s="${s.start}" data-e="${s.end}">
+    <td class="t" data-seek="${s.start}">${mmss(s.start)}</td>
+    <td>${body}${flags?`<div class="flags">${flags}</div>`:''}</td></tr>`;
+}
+
+let rows = '';
+SEGS.forEach((s, i) => {
+  if (i > 0) {
+    const gap = s.start - SEGS[i-1].end;
+    if (gap >= PAUSE_MIN)
+      rows += `<tr class="pause"><td colspan="2">— ${gap.toFixed(1)} s pause —</td></tr>`;
+  }
+  rows += segRow(s, i);
+});
+
+const dur = META.duration_s;
+document.getElementById('app').innerHTML = `
+<h1>${e(T.video_id)} — transcript review</h1>
+<div class="sub"><b>${e(META.source_file || '')}</b>
+ ${META.model?`· model <b>${e(META.model)}</b>`:''}
+ ${META.language?`· ${e(META.language)}`:''}
+ ${dur?`· ${mmss(dur)}`:''}
+ ${META.word_level_available===false?'· <b style="color:var(--bd)">no word timings</b>':''}</div>
+
+<div class="counts">
+ <span><b>${SEGS.length}</b> segments</span>
+ <span><b>${allWords.length}</b> words</span>
+ <span><b>${SEGS.filter(isNotation).length}</b> notation-bearing</span>
+ <span class="${flagged.length?'a':''}"><b>${flagged.length}</b> flagged</span>
+ ${META.pauses_over_threshold!=null?`<span><b>${META.pauses_over_threshold}</b> pauses > ${PAUSE_MIN}s</span>`:''}
+</div>
+
+<div class="player">
+ ${AUDIO ? `<audio id="au" controls preload="metadata" src="${AUDIO}"></audio>`
+         : `<div class="note">No audio embedded — timestamps will not play.
+            Re-export with <code>--audio &lt;file&gt;</code>.</div>`}
+ <div class="bar">
+  <label><input type="checkbox" id="onlyNot"> notation segments only
+   (${SEGS.filter(isNotation).length})</label>
+  <label><input type="checkbox" id="follow" checked> follow playback</label>
+  <span class="hint">click a timestamp to play from there · click a word to play just that word</span>
+ </div>
+</div>
+
+<table><tbody>${rows}</tbody></table>
+
+<h3>How to check notation</h3>
+<div class="note">Tick <b>notation segments only</b>, then click each word that
+should be a symbol. You hear what was said and read what the recogniser wrote.
+Mis-transcribed notation is invisible to an overall word-error rate, because the
+errors cluster in exactly the segments that matter — so this pass is the check,
+not the WER number.</div>
+
+<footer>Rendered from the transcript embedded in this file, so the table and the
+data cannot disagree. To change what appears here, change the transcript block,
+not the markup. Word timings come from forced alignment (DEC-001, path A) and
+are typically accurate to ±20–50 ms — inside the 80 ms sync-drift gate.</footer>`;
+
+// ── playback ────────────────────────────────────────────────────────────
+const au = document.getElementById('au');
+let stopAt = null;
+
+document.querySelectorAll('td.t').forEach(td => td.onclick = () => {
+  if (!au) return;
+  stopAt = null; au.currentTime = +td.dataset.seek; au.play();
+});
+
+document.querySelectorAll('.w').forEach(w => w.onclick = ev => {
+  if (!au) return;
+  ev.stopPropagation();
+  au.currentTime = +w.dataset.s;
+  stopAt = +w.dataset.e + 0.04;      // a touch of tail so the word is not clipped
+  au.play();
+});
+
+document.getElementById('onlyNot').onchange = ev =>
+  document.body.classList.toggle('only-notation', ev.target.checked);
+
+if (au) au.addEventListener('timeupdate', () => {
+  const t = au.currentTime;
+  if (stopAt !== null && t >= stopAt) { au.pause(); stopAt = null; }
+
+  document.querySelectorAll('.w.now').forEach(x => x.classList.remove('now'));
+  document.querySelectorAll('tr.seg.active').forEach(x => x.classList.remove('active'));
+
+  const seg = [...document.querySelectorAll('tr.seg')]
+    .find(r => t >= +r.dataset.s && t <= +r.dataset.e);
+  if (!seg) return;
+  seg.classList.add('active');
+  const w = [...seg.querySelectorAll('.w')]
+    .find(x => t >= +x.dataset.s && t <= +x.dataset.e);
+  if (w) w.classList.add('now');
+  if (document.getElementById('follow').checked) {
+    const box = seg.getBoundingClientRect();
+    if (box.top < 120 || box.bottom > innerHeight - 40)
+      seg.scrollIntoView({block: 'center', behavior: 'smooth'});
+  }
+});
+</script></body></html>

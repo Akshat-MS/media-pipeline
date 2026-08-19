@@ -65,6 +65,9 @@ are not lost; **not yet actioned.**
 | OBS-027 | **`asset-deconstructor-schema.md` §8 no longer matches Layer 3's output.** The spec is the declared owner of the per-asset shape, but Layer 3 v4 adds `lines[]`, `flags[]`, `labels_prior`, `realizes_prior` and the deck-level wrapper — none of which the spec lists. Two owners of one shape, disagreeing | Fold the new fields into the spec §8, or record in the spec that the layer file extends it and how | Layer 3 output being trusted as spec-conformant | **High** | open |
 | OBS-028 | **The merged V017 slide 2 has no background, footer band or logo.** It was reconstructed from a video frame, so it carries none of the deck's chrome. Confirmed by render: it appears on white while every other slide is teal | Add the deck's chrome to that slide in PowerPoint. Otherwise Layer 3's `chrome_pattern` sees slide 2 as an exception, and Layer 5 has no footer to lay out around | Layer 3 chrome consistency | Medium | open |
 | OBS-029 | **`mpk deck merge` copies the shape tree but does not re-link images or theme parts.** For the V017 merge this was harmless (the source slide had no pictures), but a source slide with images would lose them silently | Either re-link parts properly, or keep the guard: always `mpk deck render` after a merge and check by eye. The command prints this warning today | Any future merge involving pictures | Medium | open |
+| OBS-030 | **`mpk transcript build` has never actually run.** Whisper models download from Hugging Face on first use, and that is blocked in the environment where the command was written — so the code path, arguments and error handling are verified but the model has never loaded. Everything downstream of it (`export` in all four formats, `check`, the review page) is tested against a realistic hand-built transcript | Run once on V017: **64 segments, 1 h 03 m of audio, word timings present**. It did fail — see OBS-032 — and the fix is in. Real counts now recorded in the layer file | Layer 4's first real run | **High** | **closed** — ran on V017, one defect found and fixed |
+| OBS-031 | **The Whisper model tier is not chosen, and word-error rate has never been measured.** `--model small` is a default, not a decision. `quality-thresholds.md` sets an advisory ≤12% WER on a reference sample, and `jiwer` is already a project dependency — but nothing uses it, so there is no number | Transcribe one segment set at `small` and `medium`, measure both with `jiwer` against a hand-corrected reference, then fix the tier. Notation-dense segments should be weighted separately (OBS-021) | Confidence in every transcript | Medium | open |
+| OBS-032 | **Notation detection was hardcoded to one deck's vocabulary and silently found nothing.** The first real V017 run flagged **0 of 64** segments as notation-bearing, in a transcript that says *semaphore* 8×, *mutex* 7×, *empty* 21× and *BUFSIZE* once. The regex hunted P₁/Rⱼ/{…}/≤ — deadlock vocabulary — while V017 is bounded buffer. A detector that reports zero is worse than no detector: it reads as "nothing to check" | Fixed. `--terms-from MANIFEST` drives detection from Layer 3's `entity_inventory`, unioned with `--vocab`; matching tolerates recogniser mangling (*BUFSIZE* → *"buff size"*). V017 now flags **38 of 64**. `mpk transcript reflag` re-applies without re-transcribing. **Deck terms alone were not enough** — they gave 3 terms and still 0 matches, because *semaphore* and *mutex* are spoken but never drawn; the union is what works | OBS-021, and every notation check | **High** | **closed** — fix in `mpk`, layer file updated |
 | OBS-021 | **Notation tokens may be mis-transcribed, attaching word timings to the wrong words.** Speech recognition renders "Pᵢ" and "Rⱼ" inconsistently ("P I", "pie", "PI"). Forced alignment attaches timings to whatever tokens the transcript contains, so a beat bound to "Rj" can fire on the wrong word. The overall word-error rate will not surface this — the errors are concentrated in exactly the notation-dense segments that matter most | Verification pass on notation-dense segments specifically, separate from the word-error-rate advisory check | Layer 8 accuracy | **High** | open |
 | OBS-022 | **Animation durations need a floor and an under-run policy.** When a bound phrase is shorter than the floor (e.g. 0.3 s), drawing a long arrow across it looks frantic. No rule exists for what happens then — compress, run into the following pause, or simplify | Define floor + under-run policy in the style contract. Pairs with OBS-008 | Layer 8 | **High** | open |
 | OBS-020 | **The duration row in `competitive-analysis.md` is not a like-for-like comparison** and reads as one. Original 120.1s is the full lecture; competitor 61.0s and ours 83.1s are trimmed demo samples of differing length. This misreading already produced one bad requirement (PROP-001) | Add a note to the row: durations are not comparable; do not infer pacing or content coverage from them | Risk of further false requirements | **High** | open |
@@ -79,8 +82,8 @@ are not lost; **not yet actioned.**
 
 | Priority | Open | Closed | Blocking |
 |---|---|---|---|
-| High | 10 | 2 | Layers 3, 6, 8 |
-| Medium | 10 | 4 | — |
+| High | 11 | 2 | Layers 3, 4, 6, 8 |
+| Medium | 11 | 4 | — |
 | Low | 3 | — | — |
 
 **Baseline: `main` after `phase2/config-mgmt` is merged.** Five items were
@@ -112,7 +115,8 @@ scale).
 | **1 · Target spec** | ✅ complete — prompt, artifact spec, review | 1 open (OBS-002) |
 | **2 · Global theme** | ✅ complete — four-step prompt, artifact spec, review | **7 open** — OBS-005…010, OBS-023 |
 | **3 · Asset deconstruction** | ✅ complete — v4 prompt, `mpk deck extract`, review page, 18 review checks | 3 open — OBS-027…029 |
-| 4 onward | not yet written | — |
+| **4 · Narration timeline** | ✅ complete — v1.2 prompt, `mpk transcript build/export/check/reflag`, review page, 12 review checks. **First real run done on V017** | 1 open — OBS-031. OBS-030 and OBS-032 closed |
+| 5 onward | not yet written | — |
 
 **Layer 2's documentation is done; its output is not.** Contract v3 fails six
 of the eleven review checks. None of those block Layer 3 or Layer 4 — they
