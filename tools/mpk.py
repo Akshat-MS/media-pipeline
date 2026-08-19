@@ -67,6 +67,23 @@ def slide_id(deck_id: str, n: int) -> str:
     return f"{deck_id}_s{n:02d}"
 
 
+def open_deck(path: str):
+    """Open a .pptx. A file that is not a PowerPoint package is a normal
+    mistake, not a crash — python-pptx raises PackageNotFoundError, which says
+    nothing useful about what went wrong."""
+    need("pptx")
+    from pptx import Presentation
+    from pptx.exc import PackageNotFoundError
+    try:
+        return Presentation(path)
+    except PackageNotFoundError:
+        die(f"not a PowerPoint file: {path}\n"
+            f"       mpk deck commands need a .pptx. If this is a .ppt, open it "
+            f"in PowerPoint or LibreOffice and save as .pptx.")
+    except Exception as exc:
+        die(f"could not open {path}: {type(exc).__name__}: {exc}")
+
+
 # ════════════════════════════════════════════════════════════ deck extract
 def _lines_of(tf) -> list[str]:
     """Visual lines. Splits paragraphs on <a:br/> soft breaks, which PowerPoint
@@ -273,9 +290,7 @@ def _walk(shapes, sid: str, parent=None, group_off=(0, 0), depth=0) -> list[dict
 
 
 def cmd_deck_extract(args):
-    pptx = need("pptx")
-    from pptx import Presentation
-    prs = Presentation(args.file)
+    prs = open_deck(args.file)
     deck_id = args.deck_id or Path(args.file).stem.lower()[:16]
 
     slides, coverage = [], []
@@ -323,9 +338,7 @@ def cmd_deck_extract(args):
 
 
 def cmd_deck_info(args):
-    need("pptx")
-    from pptx import Presentation
-    prs = Presentation(args.file)
+    prs = open_deck(args.file)
     w, h = prs.slide_width, prs.slide_height
     print(f"{Path(args.file).name}")
     print(f"  slides : {len(prs.slides)}")
@@ -347,11 +360,9 @@ def cmd_deck_info(args):
 
 # ════════════════════════════════════════════════════════════ deck normalize
 def cmd_deck_normalize(args):
-    need("pptx")
-    from pptx import Presentation
-    src = Presentation(args.file)
+    src = open_deck(args.file)
     if args.like:
-        ref = Presentation(args.like)
+        ref = open_deck(args.like)
         tw, th = ref.slide_width, ref.slide_height
     else:
         tw, th = args.width, args.height
@@ -388,10 +399,8 @@ def cmd_deck_normalize(args):
 
 # ════════════════════════════════════════════════════════════ deck merge
 def cmd_deck_merge(args):
-    need("pptx")
-    from pptx import Presentation
-    base = Presentation(args.into)
-    add = Presentation(args.file)
+    base = open_deck(args.into)
+    add = open_deck(args.file)
 
     if (base.slide_width, base.slide_height) != (add.slide_width, add.slide_height):
         die(f"canvas mismatch: {args.into} is {base.slide_width}x{base.slide_height}, "
@@ -500,7 +509,10 @@ def cmd_review_build(args):
     tpl_path = resolve_template(args.template or DEFAULT_TEMPLATE)
     tpl = tpl_path.read_text(encoding="utf-8")
     raw = Path(args.file).read_text(encoding="utf-8")
-    json.loads(raw)                      # fail loudly on malformed input
+    try:
+        json.loads(raw)                  # fail loudly, and readably
+    except json.JSONDecodeError as exc:
+        die(f"{args.file} is not valid JSON: {exc}")
     html, n = _DATA_BLOCK.subn(
         lambda m: m.group(1) + raw.strip() + m.group(2), tpl)
     if n != 1:
@@ -615,7 +627,10 @@ def cmd_video_uniquefps(args):
 
 # ════════════════════════════════════════════════════════════ check manifest
 def cmd_check_manifest(args):
-    m = json.loads(Path(args.file).read_text())
+    try:
+        m = json.loads(Path(args.file).read_text())
+    except json.JSONDecodeError as exc:
+        die(f"{args.file} is not valid JSON: {exc}")
     m = m.get("payload", m)
     slides = m.get("slides") or [m]
     problems, notes = [], []
