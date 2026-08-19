@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Slide review — Layer 3 asset deconstruction</title>
+<style>
+:root{--bg:#0f1524;--pn:#151d31;--ln:#26314b;--tx:#e8edf7;--t2:#a8b6d2;--dm:#6a7898;
+--ok:#3FD0C9;--wn:#F2A33C;--bd:#FF6B6B;--sm:#B79CF5;--pr:#7FB2F0}
+*{box-sizing:border-box}
+body{margin:0;padding:26px 20px 70px;background:var(--bg);color:var(--tx);
+font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+.wrap{max-width:1560px;margin:0 auto}
+h1{font-size:21px;margin:0 0 4px;font-weight:650}
+.sub{color:var(--t2);font-size:13px;margin-bottom:16px}.sub b{color:var(--tx)}
+.counts{display:flex;flex-wrap:wrap;gap:20px;padding:12px 16px;margin-bottom:14px;
+background:var(--pn);border:1px solid var(--ln);border-radius:8px;font-size:13px;color:var(--t2)}
+.counts b{color:var(--tx);font-size:16px;font-weight:650}
+.counts .a b{color:var(--wn)}.counts .x b{color:var(--bd)}
+nav{margin-bottom:16px;font-size:12px}
+nav a{display:inline-block;padding:4px 10px;margin:0 5px 5px 0;border-radius:5px;
+background:var(--pn);border:1px solid var(--ln);color:var(--t2);text-decoration:none;
+font-family:ui-monospace,Menlo,monospace}
+nav a:hover{color:var(--tx);border-color:var(--pr)}
+.bar{margin-bottom:14px;font-size:13px;color:var(--t2)}
+.bar label{cursor:pointer;user-select:none;margin-right:18px}
+.deck{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:4px 18px 18px;margin-bottom:26px}
+section.slide{margin-bottom:34px}
+h2{font-size:16px;margin:26px 0 10px;font-weight:650;font-family:ui-monospace,Menlo,monospace}
+h3{font-size:12px;margin:20px 0 8px;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.meta{font-size:12px;color:var(--dm);font-weight:400;font-family:inherit;text-transform:none;letter-spacing:0}
+table{width:100%;border-collapse:collapse;background:var(--pn);border:1px solid var(--ln);border-radius:8px;overflow:hidden}
+table.mini td,table.mini th{font-size:12.5px;padding:8px 11px}
+th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--dm);
+font-weight:600;padding:9px 11px;border-bottom:1px solid var(--ln);background:#111827}
+td{padding:10px 11px;border-bottom:1px solid var(--ln);vertical-align:top;font-size:13.5px}
+tr:last-child td{border-bottom:none}
+tr.static{opacity:.6}body.hs tr.static{display:none}
+body.he tr:not(.eye){display:none}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px}
+.kind{color:var(--dm);font-size:11px;margin-top:2px}
+.px{color:var(--dm);white-space:nowrap}.label{max-width:230px}.dim{color:var(--dm)}
+.tag{font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:3px 7px;border-radius:4px;white-space:nowrap}
+.tag-dynamic{background:rgba(63,208,201,.16);color:var(--ok)}
+.tag-static{background:rgba(255,255,255,.07);color:var(--t2)}
+.sem{color:var(--sm);font-weight:600}.null{color:var(--dm);font-style:italic}
+.prior{color:var(--pr);font-weight:600}
+.rel{margin-top:5px;font-size:12px;color:var(--t2)}
+.basis{color:var(--dm);font-size:11.5px;margin-top:3px;line-height:1.45}
+.flags{max-width:300px}
+.f{font-size:11.5px;margin-bottom:3px;padding-left:14px;position:relative;line-height:1.4}
+.f:before{content:"●";position:absolute;left:0;top:0;font-size:8px}
+.f-ok,.f-ok:before{color:var(--ok)}.f-warn,.f-warn:before{color:var(--wn)}
+.f-bad,.f-error,.f-bad:before,.f-error:before{color:var(--bd)}.f-bad,.f-error{font-weight:700}
+.f-info:before{color:var(--dm)}.f-info{color:var(--t2)}
+ul.conns{list-style:none;padding:0;margin:0}
+ul.conns li{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:11px 15px;margin-bottom:7px;font-size:13.5px}
+.ok{color:var(--ok);font-size:11.5px;font-weight:600}
+.bad,.warnc{font-size:11.5px;font-weight:700}.bad{color:var(--bd)}.warnc{color:var(--wn)}
+p.note{font-size:13px;color:var(--t2);margin:0 0 4px}
+footer{margin-top:36px;color:var(--dm);font-size:11.5px;line-height:1.6}
+</style></head><body><div class="wrap" id="app"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     THE MANIFEST. Replace the contents of this block with the manifest and
+     change nothing else in this file. The page below renders whatever is
+     here, so the two cannot disagree.
+     ══════════════════════════════════════════════════════════════════════ -->
+<script type="application/json" id="manifest">
+{"deck_id":"REPLACE_ME","metadata":{},"deck":{},"slides":[]}
+</script>
+
+<script>
+const M = JSON.parse(document.getElementById('manifest').textContent);
+const e = s => s==null?'':String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SEV = {error:0,bad:0,warn:1,ok:2,info:3};
+
+const LEGACY = [
+ ['properties','raster_content_unread',true,'opaque raster — contents unread','warn'],
+ ['properties','render_check_required',true,'may render differently from its type — eye-check','warn'],
+ ['properties','positioned_outside_labelled_shape',true,'label sits outside the shape it labels','warn'],
+ ['properties','empty',true,'no text runs — contributes no content','info'],
+ ['properties','is_field',true,'rendered field, not a literal string','info'],
+ ['properties','full_bleed',true,'full-bleed','info'],
+ ['bounding_box','inherited_from',null,'geometry inherited from the slide master','info']];
+
+function flags(a){
+  let out=(a.flags||[]).map(f=>[f.note||f.code||'',f.severity||'info',!!f.needs_eye_check]);
+  if(!out.length){
+    for(const [w,k,exp,note,sev] of LEGACY){
+      const v=(a[w]||{})[k];
+      if(exp===null? v!=null : v===exp) out.push([note,sev,sev==='warn']);
+    }
+    const b=a.bounding_box||{};
+    if(b.rot||b.flipH||b.flipV) out.push(['carries a rotation/flip transform','info',false]);
+    if((a.properties||{}).colour_convention_note) out.push([a.properties.colour_convention_note,'info',false]);
+  }
+  if(a.type==='connector'){
+    const p=a.properties||{};
+    out.push(p.direction_verified?['direction verified','ok',false]:['DIRECTION UNVERIFIED','bad',true]);
+    for(const ep of Object.values(a.endpoints||{})) if(ep&&ep.inferred){out.push(['endpoint inferred, not declared','warn',true]);break;}
+  }
+  return out.sort((x,y)=>(SEV[x[1]]??9)-(SEV[y[1]]??9));
+}
+const eye = a => flags(a).some(([,s,k])=>['warn','bad','error'].includes(s)||k);
+
+function labelOf(a){const p=a.properties||{};
+  if(p.text) return e(p.text);
+  if(p.descr) return `<span class="dim">image — ${e(p.descr)}</span>`;
+  if(p.empty) return '<span class="dim">(empty)</span>';
+  return '<span class="dim">(no text)</span>';}
+
+const SCALE = (M.metadata?.canvas_dimensions?.width||0)/1920 || null;
+const box = b => (!b||!SCALE)?'':`${Math.round(b.x/SCALE)}, ${Math.round(b.y/SCALE)} · ${Math.round(b.cx/SCALE)}×${Math.round(b.cy/SCALE)}`;
+
+const SLIDES = M.slides||[M];
+const ALL = SLIDES.flatMap(s=>s.assets||[]);
+const nameOf = (as,id)=>{const a=as.find(x=>x.element_id===id);
+  return a?(a.properties?.text||a.semantic_type_prior?.value||a.semantic_type||id):id;};
+
+function slideHTML(s){
+  const as=s.assets||[], cn=as.filter(a=>a.type==='connector');
+  const unv=cn.filter(c=>!(c.properties||{}).direction_verified), ey=as.filter(eye);
+  const rows=as.map(a=>{
+    const pb=[];
+    if(a.semantic_type_prior) pb.push(`<span class="prior">${e(a.semantic_type_prior.value)}?</span><div class="basis">${e(a.semantic_type_prior.basis)}</div>`);
+    if(a.labels_prior) pb.push(`<div class="rel">labels <span class="mono">${e(a.labels_prior.element_id)}</span><div class="basis">${e(a.labels_prior.basis)}</div></div>`);
+    if(a.realizes_prior) pb.push(`<div class="rel">realizes <span class="mono">${e((a.realizes_prior.element_ids||[]).join(', '))}</span><div class="basis">${e(a.realizes_prior.basis)}</div></div>`);
+    return `<tr class="${a.tag==='DYNAMIC'?'dynamic':'static'}${eye(a)?' eye':''}">
+<td class="mono">${e(a.element_id)}</td>
+<td class="mono dim">${e(a.type)}<div class="kind">${e(a.shape_kind)}</div></td>
+<td><span class="tag tag-${e((a.tag||'').toLowerCase())}">${e(a.tag)}</span></td>
+<td class="label">${labelOf(a)}</td>
+<td>${a.semantic_type?`<span class="sem">${e(a.semantic_type)}</span>`:'<span class="null">null</span>'}</td>
+<td>${pb.join('')||'<span class="dim">—</span>'}</td>
+<td class="mono px">${box(a.bounding_box)}</td>
+<td class="flags">${flags(a).map(([n,sv])=>`<div class="f f-${e(sv)}">${e(n)}</div>`).join('')||'<span class="dim">—</span>'}</td></tr>`;}).join('');
+  const cl=cn.map(c=>{const p=c.properties||{},ep=c.endpoints||{};
+    return `<li><span class="mono">${e(c.element_id)}</span> <b>${e(nameOf(as,ep.start?.anchor_element_id))}</b> → <b>${e(nameOf(as,ep.end?.anchor_element_id))}</b>${c.semantic_type_prior?` <span class="prior">${e(c.semantic_type_prior.value)}?</span>`:''}<span class="${p.direction_verified?'ok':'bad'}"> · ${p.direction_verified?'direction verified':'DIRECTION UNVERIFIED'}</span><div class="basis">${e(p.direction_basis)}</div></li>`;}).join('');
+  return `<section class="slide" id="s-${e(s.slide_id)}"><h2>${e(s.slide_id)}
+<span class="meta">${as.length} elements · ${as.filter(a=>a.tag==='DYNAMIC').length} dynamic · ${cn.length} connectors${unv.length?` · <span class="bad">${unv.length} direction unverified</span>`:''}${ey.length?` · <span class="warnc">${ey.length} need a look</span>`:''}</span></h2>
+<table><thead><tr><th>ID</th><th>Type</th><th>Tag</th><th>Text / label</th><th>semantic_type</th><th>Priors &amp; relationships</th><th>x, y · w×h</th><th>Flags</th></tr></thead><tbody>${rows}</tbody></table>
+${cl?`<h3>Connectors — read as sentences</h3><ul class="conns">${cl}</ul>`:''}</section>`;}
+
+function deckHTML(d){
+  if(!d) return ''; const p=[];
+  const tbl=(head,rows)=>`<table class="mini"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+  if(d.entity_inventory?.length) p.push(`<h3>Entity inventory <span class="meta">— Layer 6 builds the topic vocabulary from this</span></h3>`+
+    tbl(['Label','Prior type','Slides','Note'],d.entity_inventory.map(x=>`<tr><td><b>${e(x.label)}</b></td><td><span class="prior">${e(x.prior_semantic_type||'—')}</span></td><td class="mono dim">${e((x.appears_on_slides||[]).join(', '))}</td><td class="dim">${e(x.note)}</td></tr>`).join('')));
+  if(d.chrome_pattern?.length) p.push('<h3>Chrome — classified once</h3>'+
+    tbl(['Role','semantic_type','Slides','Note'],d.chrome_pattern.map(x=>`<tr><td><b>${e(x.element_role)}</b></td><td><span class="sem">${e(x.semantic_type||'—')}</span></td><td class="mono dim">${e((x.appears_on_slides||[]).join(', '))}</td><td class="dim">${e(x.note)}</td></tr>`).join('')));
+  if(d.colour_convention) p.push(`<h3>Colour convention</h3><p class="note">${d.colour_convention.present?'present':'<b>not present in this deck</b> — do not assume one from another deck'}. ${e(d.colour_convention.basis)}</p>`);
+  if(d.consistency) p.push(`<h3>Cross-slide consistency</h3><p class="note">${e(d.consistency)}</p>`);
+  const gaps=(d.id_coverage||[]).filter(c=>c.gaps?.length);
+  if(gaps.length) p.push('<h3>ID coverage — gaps</h3>'+
+    tbl(['Slide','Missing ids','Reading'],gaps.map(c=>`<tr><td class="mono">${e(c.slide_id)}</td><td class="mono dim">${e((c.gaps||[]).join(', '))}</td><td class="dim">${e(c.reading)}</td></tr>`).join('')));
+  if(d.speaker_notes?.length) p.push('<h3>Speaker notes <span class="meta">— context only, NOT narration</span></h3>'+
+    tbl(['Slide','Text'],d.speaker_notes.map(n=>`<tr><td class="mono">${e(n.slide_id)}</td><td>${e(n.text)}</td></tr>`).join('')));
+  return p.length?`<div class="deck">${p.join('')}</div>`:'';}
+
+const cn=ALL.filter(a=>a.type==='connector'), unv=cn.filter(c=>!(c.properties||{}).direction_verified), ey=ALL.filter(eye);
+document.getElementById('app').innerHTML = `
+<h1>${e(M.deck_id||M.slide_id)} — Layer 3 review</h1>
+<div class="sub"><b>${e(M.metadata?.source_file)}</b> · extraction path <b>${e(M.metadata?.extraction_path)}</b> · canvas ${e(M.metadata?.canvas_dimensions?.width)}×${e(M.metadata?.canvas_dimensions?.height)} ${e(M.metadata?.canvas_dimensions?.units)}</div>
+<div class="counts">
+<span><b>${SLIDES.length}</b> slides</span><span><b>${ALL.length}</b> elements</span>
+<span><b>${ALL.filter(a=>a.tag==='DYNAMIC').length}</b> dynamic</span>
+<span><b>${ALL.filter(a=>a.semantic_type).length}</b> resolved</span>
+<span><b>${ALL.filter(a=>!a.semantic_type).length}</b> null for Layer 5</span>
+<span><b>${cn.length}</b> connectors</span>
+<span class="${unv.length?'x':''}"><b>${unv.length}</b> direction unverified</span>
+<span class="${ey.length?'a':''}"><b>${ey.length}</b> need a human look</span></div>
+${SLIDES.length>1?`<nav>${SLIDES.map(s=>`<a href="#s-${e(s.slide_id)}">${e(s.slide_id)}</a>`).join('')}</nav>`:''}
+<div class="bar">
+<label><input type="checkbox" onchange="document.body.classList.toggle('hs',this.checked)"> hide STATIC chrome</label>
+<label><input type="checkbox" onchange="document.body.classList.toggle('he',this.checked)"> only rows needing a look</label></div>
+${deckHTML(M.deck)}
+${SLIDES.map(slideHTML).join('')}
+<footer>This page renders the manifest embedded in this same file — the table and the data
+cannot disagree. To change what appears here, change the manifest block, not the markup.
+Positions are scaled to a 1920-wide canvas for reading only; the manifest holds the
+authoritative EMU values.</footer>`;
+</script></body></html>

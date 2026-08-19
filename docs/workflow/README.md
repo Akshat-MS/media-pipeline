@@ -87,12 +87,45 @@ A layer is not complete until all four exist.
 |---|---|---|
 | 1 | **What it does** | Why the layer exists, and which decision it owns |
 | 2 | **The prompt to run** | Verbatim, in one copyable block, versioned. Re-runnable by anyone |
-| 3 | **What it emits** | **Required** (frozen, minimal) + **Observed** (open). Form follows consumer |
+| 3 | **What it emits** | **Two forms** — one to decide with, one to build from. See below |
 | 4 | **Review before proceeding** | Check the output against what the *next* layer needs, before running it |
 
 **A layer missing its prompt is not "done" — it is undocumented.** Even when the
 work was already completed by hand, the prompt is written down, because the
 prompt is how the layer survives a re-run, a new video, or a new person.
+
+### On rule 3 — every layer emits two forms
+
+| Form | For | Shape |
+|---|---|---|
+| **Decide with** | A human approving or rejecting the output, fast | A table, a sketch, or a rendered page |
+| **Build from** | The next layer, and eventually the code pipeline | JSON, or whatever the consumer parses |
+
+| Layer | Decide with | Build from |
+|---|---|---|
+| 3 · Assets | Table: element, type, text, tag | `manifest.json` |
+| 4 · Transcript | Table: time, text, word spans | `transcript.json` |
+| 5 · Representation | Annotated table + layout sketch | `representation.json` |
+| 6 · Vocabulary | Rendered swatch sheet | `vocabulary.json` |
+| 8 · Sequence | **HTML player** — transport, captions, speed control | `sequence.json` |
+
+**The rule that makes this safe: the decide-with form is a *view* of the
+build-from form, generated from it — never authored alongside it.** Two
+independently written descriptions of the same beats will drift, which is the
+failure this whole structure exists to prevent. Where practical the view should
+literally load the artifact.
+
+**Why this is not optional.** Nobody can look at
+`{"t_start_s": 66.0, "dimension": "state_motion"}` and know whether it feels
+right. A beat sheet is approved by watching it, not by reading it — an
+unreviewable artifact gets approved wrong and the error surfaces at render, two
+layers downstream. The proven instrument here is the dry-run HTML: transport
+controls, a caption bar showing the narration as it plays, and a speed control
+for when you only want the shape of it.
+
+This also inverts the cost. If the reviewable form is *generated* from the
+machine form, the JSON stops being overhead and becomes load-bearing — and the
+review instrument arrives free.
 
 ### On rule 3 — how to define an artifact without guessing
 
@@ -181,7 +214,7 @@ or added as the work reveals complexity.
 |---|---|---|---|---|---|---|
 | 1 | Target spec | What the output must be | Project | `1-target-spec.md` | v1 | done |
 | 2 | Global theme | Background, palette roles, typography, animation defaults | Once, all 5 | `2-global-theme.md` | v2 | done |
-| 3 | Asset deconstruction | What is on each slide | Per slide | — | planned | — |
+| 3 | Asset deconstruction | What is in each deck | **Per deck** | `3-asset-deconstruction.md` | v4 | verified on 1 slide |
 | 4 | Transcript + timing | What is said, when | Per video | — | planned | — |
 | 5 | Slide representation | Semantic identity; layout | Per slide | — | planned | — |
 | 6 | Visual vocabulary | What each semantic type looks like | Per topic | — | planned | — |
@@ -213,6 +246,35 @@ used the old layer numbering (theme = Layer 1).
 - **Layers 3 ∥ 4** run concurrently — they share no inputs.
 - **Layer 7 (audio)** is a parallel branch that gates nothing upstream and
   rejoins only at final mux.
+
+---
+
+## 6a · Tooling — `mpk`
+
+Deterministic work belongs in a tool; judgement belongs in a prompt. `mpk`
+(Media Pipeline Kit, `tools/mpk.py`) is where the deterministic half lives.
+
+```
+mpk --help                 every group and command has -h
+mpk deck   info | extract | normalize | merge | render
+mpk review build
+mpk audio  extract | asr | probe
+mpk video  probe | uniquefps
+mpk check  manifest
+```
+
+| Command | Serves |
+|---|---|
+| `deck extract` | Layer 3 step 1 — OOXML shape tree, `lines[]`, connector endpoints, `id_coverage` |
+| `deck normalize` / `merge` | Repairing a deck before extraction — e.g. a slide reconstructed at the wrong canvas size |
+| `review build` | Layer 3 step 3A — injects the manifest into `tools/templates/slide-review.html` |
+| `audio extract` / `asr` | The RC-003 two-path split: 48 kHz stereo master, 16 kHz mono for alignment |
+| `audio probe` | Layer 7's input measurements |
+| `video uniquefps` | **TGT-013** — unique frames per second, which TGT-002 cannot detect |
+
+The rule: **a prompt never does arithmetic a file already contains.** Geometry,
+text, indent levels and connector endpoints are explicit in the `.pptx`; reading
+them from a picture converts known values into guesses.
 
 ---
 
@@ -260,6 +322,8 @@ move or token travel is split across two renders and the seam is visible.
 
 | File | Holds | Growth |
 |---|---|---|
+| `context.md` | The standing project brief, attached to every layer run | rarely — every addition is paid for on every run |
+| `tools/templates/*.html` | The review pages themselves; `mpk review build` only injects data. One per review kind | one per layer that needs a view |
 | `artifacts.md` | Every artifact: path, form, produced by, consumed by, scope, version, status | append per artifact |
 | `open-items.md` | `OBS-xxx` observations needing human action | append; closed by promotion |
 | `prompt-changelog.md` | Amended prompts, with the round count that triggered the amendment | append per amendment |
@@ -283,11 +347,48 @@ registers, and the OBS row is closed with a pointer to that id.
 ## 9 · Working order
 
 1. **Write the layer's prompt** — informed by the previous layer's real output
-2. **Run it**
-3. **Review before proceeding** (rule 4)
-4. If it took 3+ rounds → amend the prompt, log it in `prompt-changelog.md`
-5. Record what was produced in `artifacts.md`; record what needs action in `open-items.md`
-6. Only then write the next layer's prompt
+2. **Review the prompt** before running it
+3. **Run it in a fresh chat** — see below
+4. **Review before proceeding** (rule 4)
+5. If it took 3+ rounds → amend the prompt, log it in `prompt-changelog.md`
+6. Record what was produced in `artifacts.md`; record what needs action in `open-items.md`
+7. Only then write the next layer's prompt
+
+### Two run modes — verification and production
+
+| Mode | Where | When |
+|---|---|---|
+| **Verification** | A **fresh chat**, no prior context | The first time a layer's prompt is run, and after any amendment |
+| **Production** | **One chat per slide**, carrying the whole per-slide chain | Every run after that |
+
+**Verification — why a fresh chat.** A prompt written and run in the same
+conversation is tested against a reader who already knows the project. It will
+appear to work while quietly depending on context that is not in the prompt.
+The fresh chat is the only honest test of rule 2, "re-runnable by anyone."
+
+Attach exactly: `context.md`, the registers the prompt's scope line names, and
+the layer's input artifacts. Nothing else.
+
+**If a fresh run fails for lack of context, the prompt is wrong, not the
+chat.** Fix the prompt — or `context.md`, if the gap is genuinely shared —
+rather than explaining the missing piece in conversation. An explanation given
+in chat is lost; a fixed prompt is kept.
+
+**Production — why one chat per slide.** Layers 3 → 5 → 6 → 8 are a chain over
+the same slide: each reads what the last produced. Re-establishing that context
+at every step is pure cost, and the earlier output is exactly the context the
+next step needs. Run the chain in one conversation.
+
+| Layer | Run mode |
+|---|---|
+| 1, 2 | Once, project-wide. Output feeds in as an attachment |
+| 4 | Once per video, independent of the slide chain |
+| 7 | Once per video, parallel branch |
+| **3 → 5 → 6 → 8** | **The per-slide chain — one chat per slide** |
+
+`context.md` earns its place by making verification possible. It is attached on
+every verification run and at the start of each production chain — not at every
+step within one. Keep it short regardless.
 
 **One slide end-to-end before touching slide two.** Doing this means eating the
 contract revision once instead of propagating a wrong decision across five

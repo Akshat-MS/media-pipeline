@@ -27,6 +27,7 @@ Not produced by any layer. The raw material.
 |---|---|---|
 | 5 source lecture recordings | V017, V018, V028, V029, V030 | Layer 4 (transcript), Layer 7 (audio) |
 | 5 source PPTX decks | one per video | Layer 3 (asset deconstruction) |
+| V017 missing slide | reconstructed from a video frame; normalised and merged at position 2 | Layer 3 |
 | Previous output video | our earlier attempt | Layer 1 (evidence) |
 | Competitor output video | the comparison bar | Layer 1 (evidence) |
 | Client feedback | quoted verbatim | Layer 1 (evidence) |
@@ -50,6 +51,14 @@ attached. See `README.md` §7.
 | Theme specimens | `docs/shared/specimen/specimen-{navy,blue,green}.html` | HTML | 2 | human review; renderer reference | global | v3 | current |
 | Specimen fonts | `docs/shared/specimen/fonts/*.ttf` | TTF | 2 | render host | global | — | current |
 | Design decisions workbook | `docs/shared/workbooks/design-decisions.xlsx` | xlsx | 1 | provenance only | project | — | current |
+| V017 deck, 5 slides | `res/inputs/V017-bounded-buffer.pptx` | pptx | source + `mpk deck merge` | 3 | per video | v2 | **not tracked** |
+| V017 raw shape tree | `res/workdir/v017.raw.json` | JSON | `mpk deck extract` | 3 | per video | v1 | **not tracked** |
+
+**`res/` is gitignored per-job data** (`res/inputs/*`, `res/workdir/*`,
+`res/outputs/*` — folders kept via `.gitkeep`). Decks, extractions, renders and
+outputs live there and are **not committed**. This register records where they
+belong, not that git holds them. Anything that must survive a fresh clone goes
+under `docs/` or `tools/`.
 
 ⚠ **The two style-contract rows disagree on version.** The document says v3, the
 runtime JSON says v1. Tracked as OBS-006. Until it is resolved, cite the
@@ -75,6 +84,19 @@ them.
 | Style contract loader | `src/pipeline/services/config/loader.py` | **The contract's runtime consumer.** Reads, migrates if needed, validates via `StyleContract` |
 | Theme resolver | `src/pipeline/services/config/resolver.py` | Flattens the selected theme into one token set; default `navy` |
 | Encode drift test | `tests/unit/test_config_delivery_targets_sync.py` | Asserts the contract's `output_encode` matches TGT-003…008 as owned by `delivery-targets.md` |
+
+### Tooling
+
+| Artifact | Path | Purpose |
+|---|---|---|
+| **mpk** — Media Pipeline Kit | `tools/mpk.py` | Deterministic CLI: deck extract/normalize/merge/render, review build, audio and video probes, manifest check |
+| Review templates | `tools/templates/` | One page per review kind. `mpk review templates` lists them; `mpk review build -t <name>` picks one |
+| ↳ Slide review | `tools/templates/slide-review.html` | Layer 3's review page — its embedded JS renders the manifest. `mpk review build` only injects data |
+
+**Planned templates**, as their layers are written: `transcript-review` (Layer 4),
+`vocabulary-review` (Layer 6), `sequence-player` (Layer 8 — the beat sheet with
+transport, caption bar and speed control, per the dry run). Each is a template
+filled with data, never a second renderer.
 | Gap specimens | `docs/shared/specimen/issues-specimen/` | Rendered evidence for each Layer 2 defect found (background, grid, legibility, math, notation, palette) |
 
 ### Superseded by this playbook

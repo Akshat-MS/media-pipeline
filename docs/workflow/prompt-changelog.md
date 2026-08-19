@@ -46,6 +46,41 @@ the earliest prompt amendment in the project and the origin of rules 9 and 10.
 | **The change** | Split into choose-direction / fill-tokens / verify. **Supplied a fixed key set** with "fill values only — do not add, rename, reorder, or omit keys". Required sizes to derive from a declared modular scale. Required every token to carry a value or `null` with a reason. Required a specimen slide exercising every token |
 | **Prompt-quality rule** | Origin of rule 9 (fixed key set) and rule 10 (forbid silence); also rule 3 (one kind of judgement per prompt) |
 
+### PC-004 · Layer 3 · v1 → v4, before any deck run
+
+| | |
+|---|---|
+| **Date** | 2026-08-19 |
+| **Rounds taken** | 1 on the verification slide; three prompt revisions came from *inspecting* that output rather than from failed runs |
+| **What went wrong** | Nothing failed. Four things were absent that only a real artifact reveals: notes existed in prose but not in the data; ID gaps were invisible; a label had no relationship to the shape it named; and `paragraphs[]` silently merged lines a viewer sees separately |
+| **Why** | v1 was written before any run, so its field list was a guess about a shape that had not been produced. The playbook's own rule — *write the artifact spec after the first run* — is exactly what this proves |
+| **The change** | v2 made the review table primary. v3 moved to deck scope and added `flags[]`, `entity_inventory`, `chrome_pattern`, `id_coverage`, `labels_prior`, table and group handling. v4 pointed step 1 at `mpk deck extract`, split step 3 into tool/prompt paths, and added `lines[]` for soft-broken lines |
+| **Prompt-quality rule** | Rule 6 (force UNRESOLVED/FLAGS) is what surfaced three of the four. Rule 9's fixed key set is what the deck wrapper now provides |
+
+**The finding worth remembering.** PowerPoint's `<a:br/>` soft breaks mean
+`paragraph.text` returns `'lock = false;\x0bdo {\x0b    while tns(&lock);'` as
+one string. Three code lines, one entry. Layer 8 reveals visual lines, so that
+would have collapsed three reveals into one — and the failure would have looked
+like a sequencing bug two layers downstream, not an extraction bug. Verified on
+the real V017 deck: 8 visual lines across 6 paragraphs, in both code blocks.
+
+### PC-003 · All layers · the two-form rule
+
+| | |
+|---|---|
+| **Date** | 2026-08-18 |
+| **Rounds taken** | n/a — found by inspecting the dry-run artifact, before any layer ran |
+| **What went wrong** | Layers were specified to emit machine artifacts (JSON) only. A `sequence.json` cannot be reviewed by eye: nobody can read `{"t_start_s": 66.0, "dimension": "state_motion"}` and know whether it feels right |
+| **Why** | The design optimised for the secondary objective (artifacts for the engine) and silently degraded the primary one (deciding fast and correctly). The dry run had it the other way round — every step produced something human-readable, which is why decisions were instant |
+| **The change** | Every layer now emits **two forms**: a decide-with view and a build-from artifact, with the view **generated from** the artifact so the two cannot drift. Layer 8 inherits the dry run's HTML player — transport, caption bar, speed control |
+| **Prompt-quality rule** | New. Rule 3 of the four-part layer rule was rewritten around it |
+
+**Source.** The dry-run file `themed_final1.html` turned out to contain a
+complete beat sheet inside `buildCues()` — start time, end time, target
+element, action, narration text. The data existed all along; it was trapped in
+the renderer instead of being emitted. The fix is not to produce new
+information, it is to give what already exists somewhere to live.
+
 ### PC-001 · Layer 2 · prompt v0 → v1
 
 | | |

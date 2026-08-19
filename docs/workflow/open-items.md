@@ -62,12 +62,16 @@ are not lost; **not yet actioned.**
 | OBS-017 | **Encode values were duplicated across five places.** **Narrowed by ADR-007 §5 + `test_config_delivery_targets_sync.py`**, which parses the machine-readable block of `delivery-targets.md` and asserts the contract's `output_encode` matches per TGT id — with a guard test that fails if a seventh citation is added without extending the check. The contract↔register edge is now automatic. **Still duplicated:** `quality-thresholds.md`, `src/pipeline/validation/thresholds.py` (`DEFAULT_THRESHOLDS`), and `style-contract.md` §10 prose | Extend the same drift-test approach to `thresholds.py`, or make it read the register. `quality-thresholds.md` already flags this as unsettled ("design question 5 will settle whether these reference TGT") — ADR-007 §5 answered it for the contract only | Nothing; guarantees future drift | Medium | open — narrowed |
 | OBS-023 | **The palette has six roles, and that number was a starting guess.** It was never checked against the material. Every role beyond what is needed costs contrast headroom and colour-vision separation — and the deuteranopia collision found in contract v3 is exactly the symptom of an over-specified palette | Count the maximum simultaneous states that must be distinguished on the busiest slide across all five decks, then lock the role count | Layer 6 | Medium | open |
 | OBS-024 | **Slide transitions sit in the theme layer as an animation default, but arguably belong to sequencing.** Left there because they are global and content-independent; the values are `null` and deferred | Revisit once one slide has run end-to-end. If per-slide variation turns out to be wanted, they move to Layer 8 | Layer 8 | Low | open |
+| OBS-027 | **`asset-deconstructor-schema.md` §8 no longer matches Layer 3's output.** The spec is the declared owner of the per-asset shape, but Layer 3 v4 adds `lines[]`, `flags[]`, `labels_prior`, `realizes_prior` and the deck-level wrapper — none of which the spec lists. Two owners of one shape, disagreeing | Fold the new fields into the spec §8, or record in the spec that the layer file extends it and how | Layer 3 output being trusted as spec-conformant | **High** | open |
+| OBS-028 | **The merged V017 slide 2 has no background, footer band or logo.** It was reconstructed from a video frame, so it carries none of the deck's chrome. Confirmed by render: it appears on white while every other slide is teal | Add the deck's chrome to that slide in PowerPoint. Otherwise Layer 3's `chrome_pattern` sees slide 2 as an exception, and Layer 5 has no footer to lay out around | Layer 3 chrome consistency | Medium | open |
+| OBS-029 | **`mpk deck merge` copies the shape tree but does not re-link images or theme parts.** For the V017 merge this was harmless (the source slide had no pictures), but a source slide with images would lose them silently | Either re-link parts properly, or keep the guard: always `mpk deck render` after a merge and check by eye. The command prints this warning today | Any future merge involving pictures | Medium | open |
 | OBS-021 | **Notation tokens may be mis-transcribed, attaching word timings to the wrong words.** Speech recognition renders "Pᵢ" and "Rⱼ" inconsistently ("P I", "pie", "PI"). Forced alignment attaches timings to whatever tokens the transcript contains, so a beat bound to "Rj" can fire on the wrong word. The overall word-error rate will not surface this — the errors are concentrated in exactly the notation-dense segments that matter most | Verification pass on notation-dense segments specifically, separate from the word-error-rate advisory check | Layer 8 accuracy | **High** | open |
 | OBS-022 | **Animation durations need a floor and an under-run policy.** When a bound phrase is shorter than the floor (e.g. 0.3 s), drawing a long arrow across it looks frantic. No rule exists for what happens then — compress, run into the following pause, or simplify | Define floor + under-run policy in the style contract. Pairs with OBS-008 | Layer 8 | **High** | open |
 | OBS-020 | **The duration row in `competitive-analysis.md` is not a like-for-like comparison** and reads as one. Original 120.1s is the full lecture; competitor 61.0s and ours 83.1s are trimmed demo samples of differing length. This misreading already produced one bad requirement (PROP-001) | Add a note to the row: durations are not comparable; do not infer pacing or content coverage from them | Risk of further false requirements | **High** | open |
 | OBS-018 | **Runtime path drift.** The style contract document states `config/style/global_style_contract.json`; the actual file is at `res/config/style/global_style_contract.json` | Correct the document | Anyone following the doc | Low | open |
 | OBS-019 | **Nothing read the style contract.** `services/config/` was an empty `__init__.py` | **Resolved by `phase2/config-mgmt`.** `loader.py` reads the contract from `DEFAULT_CONTRACT_PATH`, checks `schema_version`, migrates if needed, and validates through the `StyleContract` model; `resolver.py` flattens the selected theme into one token set. Note: this does **not** close OBS-006 — the v3-document / v1-payload mismatch is two valid strings and passes validation | — | — | **closed — phase2/config-mgmt** |
-| OBS-025 | **`docs/engine/architecture.md`'s Phase 2 table marks all eight Config Mgmt items "Completed: NOT STARTED"** while the same branch implements `loader.py`, `models.py`, `resolver.py` and four test suites. The docs commit landed before the implementation commit and the table was never updated | Update the Completed column before or immediately after merging `phase2/config-mgmt` | Nothing; the roadmap misreports project state | Medium | open |
+| OBS-025 | **`docs/engine/architecture.md`'s Phase 2 table marked all eight Config Mgmt items "Completed: NOT STARTED"** while the code was already merged. The docs commit landed before the implementation commit and the table was never updated | **Fixed.** Each of the eight rows verified against the merged code and marked DONE with its supporting module or test; 36-test breakdown added; plus a "not yet wired" note, since no stage calls `load_style_contract()` until Rendering exists | — | — | **closed — fixed** |
+| OBS-026 | **The same staleness exists in the Phase 1 table.** Rows **1.5** (Schema Versioning) and **1.7** (Testing/CI) both read NOT STARTED, but `envelope.py` / `migrations.py` exist with their tests (commit `ec37130`), and there are 11 test files with pytest configured and a pre-commit config (commit `04ccf6b`, "78 tests, 96% coverage"). Row 1.6 in the same table already says DONE, so the staleness is per-row | **To be corrected as part of development activity** — deliberately not flipped without verifying what each row actually claims. Deeper fix: make "update the summary table" part of finishing a step, since this is the second table to drift the same way | Nothing; the roadmap misreports project state | Medium | open — deferred to dev |
 
 ---
 
@@ -75,8 +79,8 @@ are not lost; **not yet actioned.**
 
 | Priority | Open | Closed | Blocking |
 |---|---|---|---|
-| High | 9 | 2 | Layers 3, 6, 8 |
-| Medium | 8 | 3 | — |
+| High | 10 | 2 | Layers 3, 6, 8 |
+| Medium | 10 | 4 | — |
 | Low | 3 | — | — |
 
 **Baseline: `main` after `phase2/config-mgmt` is merged.** Five items were
@@ -99,6 +103,21 @@ scale).
 | OBS-004 | rejected — see note | 2026-08-18 |
 | OBS-011 | resolved by ADR-007 §2, §7 | 2026-08-18 |
 | OBS-019 | resolved by `phase2/config-mgmt` | 2026-08-18 |
+| OBS-025 | fixed — Phase 2 table verified and updated | 2026-08-18 |
+
+### Layer status
+
+| Layer | Documentation | Output defects |
+|---|---|---|
+| **1 · Target spec** | ✅ complete — prompt, artifact spec, review | 1 open (OBS-002) |
+| **2 · Global theme** | ✅ complete — four-step prompt, artifact spec, review | **7 open** — OBS-005…010, OBS-023 |
+| **3 · Asset deconstruction** | ✅ complete — v4 prompt, `mpk deck extract`, review page, 18 review checks | 3 open — OBS-027…029 |
+| 4 onward | not yet written | — |
+
+**Layer 2's documentation is done; its output is not.** Contract v3 fails six
+of the eleven review checks. None of those block Layer 3 or Layer 4 — they
+block Layer 6 (entity binding to palette roles) and Layer 8 (pacing and
+duration rules).
 
 #### OBS-003 closure note — DEC-001 resolved
 
