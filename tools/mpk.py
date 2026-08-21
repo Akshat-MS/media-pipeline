@@ -1483,6 +1483,12 @@ def cmd_video_slidechanges(args):
     # ---- where he pointed
     focus = []
     if args.arrow:
+        # Only hunt on windows that matched a deck slide. The arrow lives on the
+        # slides; everywhere else, "orange" is a logo. On V017 the KLE mark (red)
+        # and the ekLakshya dots (orange) produced three false runs in the intro,
+        # which then read as the focus map disagreeing with ground truth when the
+        # ground truth was the thing that was wrong.
+        deck_spans = [(w["start"], w["end"]) for w in windows if w.get("slide_id")]
         rgbf, _ = _frames(args.file, args.arrow_fps, args.width, args.height, rgb=True)
         a = rgbf.astype(int)
         R, G, B = a[..., 0], a[..., 1], a[..., 2]
@@ -1490,6 +1496,11 @@ def cmd_video_slidechanges(args):
                   & ((R - B) > 110))
         count = orange.reshape(len(a), -1).sum(1)
         present = count >= args.arrow_min_px
+        if deck_spans:
+            for k in range(len(present)):
+                t = k / args.arrow_fps
+                if not any(a <= t <= b for a, b in deck_spans):
+                    present[k] = False
         i = 0
         while i < len(present):
             if present[i]:
@@ -1608,6 +1619,172 @@ def cmd_video_uniquefps(args):
 
 
 # ════════════════════════════════════════════════════════════ check manifest
+
+# The vocabulary Layer 5 resolves into (DEC-002). Fixed on purpose: without it
+# a prompt invents a name per context, one video carries two names for one idea,
+# Layer 6 makes two bindings, and the same event appears in two colours. The list
+# constrains MEANING, never FORM — shape comes from Layer 3's `type`, so an arrow
+# stays an arrow and a code line stays a code line.
+L5_VOCAB = {
+    "process_actor", "resource", "counter", "capacity", "lock", "state_flag",
+    "enqueue", "dequeue", "request", "assignment", "access",
+    "wait_point", "signal_point", "guard",
+    "title", "body_text", "code_block", "code_line", "matrix", "matrix_cell",
+    "label", "annotation", "panel", "list_item",
+    "background", "footer_band", "logo", "slide_number",
+}
+L5_ROLES = {"title_card", "recap", "motivation", "walkthrough",
+            "worked_example", "summary", "exercise", "transition"}
+
+# Chrome is settled by GEOMETRY, not by narration. Nobody says "and here is the
+# footer band" — it is a footer band because of where it sits and what it
+# repeats, which Layer 3 already established in chrome_pattern. Demanding a
+# narration citation for these would force a prompt either to leave real
+# classifications unresolved or to invent a quote, and inventing a quote is far
+# worse than the rule was ever worth.
+L5_NO_CITATION_NEEDED = {"background", "footer_band", "logo", "slide_number", "title"}
+
+
+def cmd_check_representation(args):
+    """Validate a Layer 5 artifact against the layers it came from.
+
+    VGR-07 says nothing narrated may be silently dropped from the plan. Until
+    now that was a rule with no enforcement — a representation could omit half
+    the deck and still look complete. This is the enforcement."""
+    def load(p, what):
+        try:
+            d = json.loads(Path(p).read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            die(f"{what} not found: {p}")
+        except json.JSONDecodeError as exc:
+            die(f"{what} at {p} is not valid JSON: {exc}")
+        return d.get("payload", d)
+
+    r = load(args.file, "representation")
+    fails, notes = [], []
+
+    elements = r.get("elements") or []
+    fmap = sorted(r.get("focus_map") or [], key=lambda w: w.get("start", 0))
+    if not elements:
+        fails.append("no elements")
+    if not fmap:
+        fails.append("no focus_map — Layer 8 has nothing to bind against")
+
+    # ---- 1 · element coverage against the manifest (VGR-07)
+    if args.manifest:
+        man = load(args.manifest, "manifest")
+        want = {a["element_id"] for s in man.get("slides", []) for a in s.get("assets", [])}
+        got = [x.get("element_id") for x in elements]
+        seen = set(got)
+        missing = sorted(want - seen)
+        extra = sorted(seen - want)
+        dupes = sorted({i for i in got if got.count(i) > 1})
+        if missing:
+            fails.append(f"{len(missing)} manifest element(s) never appear: "
+                         f"{', '.join(missing[:8])}{' …' if len(missing) > 8 else ''}")
+        if extra:
+            fails.append(f"{len(extra)} element(s) invented — not in the manifest: "
+                         f"{', '.join(extra[:8])}")
+        if dupes:
+            fails.append(f"{len(dupes)} element(s) appear more than once: "
+                         f"{', '.join(dupes[:8])}")
+
+    # ---- 2 · every resolution cites its evidence
+    for x in elements:
+        if x.get("status") == "resolved":
+            b = x.get("basis") or {}
+            cited = b.get("quote") and b.get("segment") and b.get("at") is not None
+            if not cited and x.get("semantic_type") not in L5_NO_CITATION_NEEDED:
+                fails.append(f"{x.get('element_id')}: resolved with no citation "
+                             f"(needs quote, segment and timestamp)")
+            st = x.get("semantic_type")
+            if st and st not in L5_VOCAB:
+                added = {v.get("term") for v in (r.get("vocabulary_additions") or [])}
+                if st in added:
+                    notes.append(f"{x.get('element_id')}: '{st}' is a declared addition")
+                else:
+                    fails.append(f"{x.get('element_id')}: '{st}' is outside the fixed "
+                                 f"vocabulary and is not declared in "
+                                 f"vocabulary_additions (DEC-002)")
+        elif x.get("status") not in ("no_narration", "unresolved"):
+            fails.append(f"{x.get('element_id')}: status "
+                         f"{x.get('status')!r} is not one of "
+                         f"resolved / no_narration / unresolved")
+
+    # ---- 3 · the focus map must tile the video
+    for a, b in zip(fmap, fmap[1:]):
+        gap = round(b.get("start", 0) - a.get("end", 0), 3)
+        if abs(gap) > args.tolerance:
+            fails.append(f"focus map {'gap' if gap > 0 else 'overlap'} of "
+                         f"{abs(gap):.2f}s at {a.get('end')}s")
+    for w in fmap:
+        if w.get("role") not in L5_ROLES:
+            fails.append(f"focus window at {w.get('start')}s has role "
+                         f"{w.get('role')!r}, outside the fixed list")
+        if not w.get("basis"):
+            notes.append(f"focus window at {w.get('start')}s has no basis")
+
+    # ---- 4 · nothing here may decide appearance, position or timing
+    # Whole words only. Substring matching flagged "Spans changes windows" for
+    # `span` and "releasing the mutex" for `easing` — two false alarms in the
+    # first real run, which is how a check trains people to ignore it.
+    # "span" as a bare verb is ordinary English — the first real run tripped on
+    # "no pointer run covers this span". Only the layout sense matters, and that
+    # always arrives attached to a grid word.
+    BANNED = ("colour", "color", "rgb", "px", "grid", "column",
+              "col_span", "row_span", "duration_s", "easing", "hex")
+    blob = json.dumps({"e": elements, "f": fmap}).lower()
+    hits = [b for b in BANNED if re.search(rf"\b{b}\b", blob)]
+    if hits:
+        notes.append("possible appearance/layout values present — Layer 5 decides "
+                     f"meaning only. Look for: {', '.join(hits)}")
+
+    # ---- 5 · does a focus window name a slide that is on screen then?
+    if args.windows:
+        wins = load(args.windows, "windows")
+        spans = [(w["start"], w["end"], w.get("slide_id"))
+                 for w in wins.get("windows", [])]
+        for w in fmap:
+            sid = w.get("slide")
+            if not sid:
+                continue
+            mid = (w.get("start", 0) + w.get("end", 0)) / 2
+            on = next((s for a, b, s in spans if a <= mid <= b), None)
+            if on and on != sid:
+                fails.append(f"focus window at {w.get('start')}s names {sid} but "
+                             f"{on} is on screen then")
+
+        # ---- 6 · does the focus map agree with the hand-placed arrow?
+        truth = wins.get("focus_ground_truth") or []
+        if truth:
+            agree = disagree = 0
+            for t in truth:
+                mid = (t["start"] + t["end"]) / 2
+                w = next((w for w in fmap if w.get("start", 0) <= mid <= w.get("end", 0)),
+                         None)
+                if w is None:
+                    disagree += 1
+                elif w.get("subject"):
+                    agree += 1
+                else:
+                    disagree += 1
+            notes.append(f"focus arrow: {agree} of {len(truth)} runs land in a window "
+                         f"that names a subject, {disagree} do not. The arrow covers "
+                         f"only part of the run time — it can confirm a wrong answer "
+                         f"but never produce a right one, so disagreement is reported, "
+                         f"never corrected")
+
+    print(f"elements: {len(elements)}  focus windows: {len(fmap)}  "
+          f"entities: {len(r.get('entities') or [])}", file=sys.stderr)
+    for n in notes:
+        print(f"  note  {n}", file=sys.stderr)
+    for f in fails:
+        print(f"  FAIL  {f}", file=sys.stderr)
+    print(f"\n{len(fails)} failure(s), {len(notes)} note(s)", file=sys.stderr)
+    if fails:
+        sys.exit(1)
+
+
 def cmd_check_manifest(args):
     try:
         m = json.loads(Path(args.file).read_text())
@@ -1841,6 +2018,17 @@ def build_parser():
     gs = g.add_subparsers(dest="cmd", metavar="<command>")
     c = gs.add_parser("manifest", help="validate a Layer 3 manifest")
     c.add_argument("file"); c.set_defaults(fn=cmd_check_manifest)
+
+    c = gs.add_parser("representation", help="validate a Layer 5 representation")
+    c.add_argument("file")
+    c.add_argument("--manifest", help="Layer 3 manifest — enables the element "
+                                      "coverage check (VGR-07)")
+    c.add_argument("--transcript", help="Layer 4 transcript — reserved")
+    c.add_argument("--windows", help="mpk video slidechanges output — enables the "
+                                     "slide-agreement and focus-arrow checks")
+    c.add_argument("--tolerance", type=float, default=0.05,
+                   help="seconds of slack allowed between focus windows (default 0.05)")
+    c.set_defaults(fn=cmd_check_representation)
 
     return ap
 
