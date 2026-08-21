@@ -12,6 +12,7 @@ lives here; judgement lives in the layer prompts.
 from __future__ import annotations
 
 import argparse
+import base64
 import copy
 import json
 import re
@@ -1235,6 +1236,127 @@ def cmd_video_probe(args):
          args.out)
 
 
+def _gray_frames(path: str, fps: float, w: int, h: int):
+    """Every frame at `fps`, greyscale, w x h, as one numpy array.
+
+    Raw video straight out of ffmpeg — no image library. numpy arrives with
+    faster-whisper, so this adds no dependency the project did not already have.
+    A 160x90 frame is 14 KB; eight minutes at 4 fps is about 27 MB, which is
+    cheap enough to hold and precise enough to see a slide change."""
+    try:
+        import numpy as np
+    except ImportError:
+        die("numpy is required for this command (it ships with faster-whisper): "
+            "pip install numpy")
+    if not have("ffmpeg"):
+        die("ffmpeg is required for this command — install it with your package "
+            "manager (apt install ffmpeg)")
+    p = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", path, "-vf", f"fps={fps},scale={w}:{h}",
+         "-pix_fmt", "gray", "-f", "rawvideo", "-"],
+        capture_output=True)
+    if p.returncode != 0:
+        die(f"ffmpeg failed reading {path}: {p.stderr.decode()[:400]}")
+    n = len(p.stdout) // (w * h)
+    if n < 2:
+        die(f"only {n} frame(s) decoded — is {path} a video?")
+    return np.frombuffer(p.stdout[:n * w * h], dtype="uint8").reshape(n, w * h), np
+
+
+def _thumb(path: str, t: float, width: int) -> str:
+    """One frame at t, as a data: URI. Empty string if it cannot be read."""
+    p = subprocess.run(
+        ["ffmpeg", "-v", "error", "-ss", f"{max(t, 0):.3f}", "-i", path,
+         "-frames:v", "1", "-vf", f"scale={width}:-2", "-q:v", "6",
+         "-f", "image2", "-vcodec", "mjpeg", "-"],
+        capture_output=True)
+    if p.returncode != 0 or not p.stdout:
+        return ""
+    return "data:image/jpeg;base64," + base64.b64encode(p.stdout).decode()
+
+
+def cmd_video_slidechanges(args):
+    """When the picture changes — measured, not inferred from the narration.
+
+    This exists because a pause is NOT a slide change. On V017 the professor
+    stops speaking at 4:09 and the slide turns at 4:13.75 — he finishes the
+    thought, pauses, then advances. Building slide windows from transcript
+    pauses would put every boundary about four seconds early, and the symptom
+    would surface two layers later looking like a sync bug.
+
+    The measurement is a mean absolute difference between consecutive sampled
+    frames. A slide change moves most of the picture at once; a cursor, a
+    talking head or a compression wobble does not."""
+    frames, np = _gray_frames(args.file, args.fps, args.width, args.height)
+    diff = np.abs(np.diff(frames.astype("float32"), axis=0)).mean(1)
+    t_of = lambda i: (i + 1) / args.fps
+
+    hits = [i for i in range(len(diff)) if diff[i] >= args.weak_threshold]
+    clusters, cur = [], []
+    for i in hits:
+        if cur and t_of(i) - t_of(cur[-1]) > args.min_gap:
+            clusters.append(cur); cur = []
+        cur.append(i)
+    if cur:
+        clusters.append(cur)
+
+    changes = []
+    for c in clusters:
+        peak = max(c, key=lambda i: float(diff[i]))
+        score = float(diff[peak])
+        changes.append({
+            "t": round(t_of(peak), 3),
+            "score": round(score, 2),
+            "tier": "strong" if score >= args.threshold else "weak",
+            # tier describes HOW MUCH of the picture moved. It does NOT mean
+            # "is a slide change" — V017's 01:22.75 turn scored 17.00 and was
+            # confirmed by eye. See metadata.tier_meaning.
+            "spans_s": [round(t_of(c[0]), 3), round(t_of(c[-1]), 3)],
+            "frames_in_cluster": len(c),
+            "confirmed": None,          # only a human sets this
+            "verdict": None})           # slide_change | in_slide_build | not_a_change
+
+    if args.thumbs:
+        for ch in changes:
+            ch["before"] = _thumb(args.file, ch["spans_s"][0] - args.thumb_lead, args.thumb_width)
+            ch["after"] = _thumb(args.file, ch["spans_s"][1] + args.thumb_lead, args.thumb_width)
+
+    dur = len(frames) / args.fps
+    strong = [c for c in changes if c["tier"] == "strong"]
+    out = {
+        "video_id": args.video_id or Path(args.file).stem,
+        "metadata": {
+            "source_file": Path(args.file).name,
+            "duration_s": round(dur, 3),
+            "sample_fps": args.fps,
+            "sample_size": [args.width, args.height],
+            "metric": "mean absolute difference between consecutive greyscale frames, 0-255",
+            "threshold": args.threshold,
+            "weak_threshold": args.weak_threshold,
+            "min_gap_s": args.min_gap,
+            "noise_floor_p50": round(float(np.percentile(diff, 50)), 3),
+            "noise_floor_p99": round(float(np.percentile(diff, 99)), 3),
+            "strong_count": len(strong),
+            "weak_count": len(changes) - len(strong),
+            "thumbnails_embedded": bool(args.thumbs),
+            "extraction_path": "mpk_video_slidechanges",
+            "mpk_version": __version__,
+            "note": "WHERE the picture changes, not WHAT changed and not WHY. "
+                    "A strong change is usually a slide turn and a weak one usually "
+                    "an in-slide build, but the tool does not know which — a human "
+                    "confirms each one in the review page. Opening and closing fades "
+                    "score high and are not slide changes."},
+        "changes": changes}
+    emit(out, args.out)
+    print(f"mpk: {len(changes)} change(s) — {len(strong)} strong, "
+          f"{len(changes) - len(strong)} weak  (noise floor p99 "
+          f"{float(np.percentile(diff, 99)):.2f})", file=sys.stderr)
+    for ch in changes:
+        m, s_ = divmod(ch["t"], 60)
+        print(f"  {'STRONG' if ch['tier'] == 'strong' else 'weak  '} "
+              f"{int(m):02d}:{s_:05.2f}  score {ch['score']:7.2f}", file=sys.stderr)
+
+
 def cmd_video_uniquefps(args):
     """TGT-013. A 30 fps file made of 8 unique frames per second reports 30 to
     ffprobe and passes TGT-002, while still looking choppy — because encoding
@@ -1444,6 +1566,29 @@ def build_parser():
     c = gs.add_parser("probe", help="resolution/fps/codec/bitrate (TGT-001…008)")
     c.add_argument("file"); c.add_argument("--out", "-o")
     c.set_defaults(fn=cmd_video_probe)
+    c = gs.add_parser("slidechanges",
+                      help="when the picture changes — slide turns and in-slide builds")
+    c.add_argument("file")
+    c.add_argument("--out", "-o", required=True)
+    c.add_argument("--video-id")
+    c.add_argument("--fps", type=float, default=4.0,
+                   help="frames sampled per second (default 4)")
+    c.add_argument("--width", type=int, default=160)
+    c.add_argument("--height", type=int, default=90)
+    c.add_argument("--threshold", type=float, default=15.0,
+                   help="at or above this the change is tiered 'strong' — a measure of "
+                        "how much moved, NOT of whether it is a slide turn (default 15, "
+                        "set below the lowest confirmed real change: 17.0 on V017)")
+    c.add_argument("--weak-threshold", type=float, default=10.0,
+                   help="below this, ignore entirely (default 10)")
+    c.add_argument("--min-gap", type=float, default=2.0,
+                   help="changes closer than this are one event (default 2.0s)")
+    c.add_argument("--thumbs", action="store_true",
+                   help="embed a before/after frame per change, for the review page")
+    c.add_argument("--thumb-width", type=int, default=560)
+    c.add_argument("--thumb-lead", type=float, default=0.6,
+                   help="seconds either side of the cluster to grab the frames")
+    c.set_defaults(fn=cmd_video_slidechanges)
     c = gs.add_parser("uniquefps", help="unique frames per second (TGT-013)")
     c.add_argument("file"); c.add_argument("--out", "-o")
     c.add_argument("--threshold", type=float, default=24.0)

@@ -16,6 +16,7 @@ tools/
   templates/
     slide-review.html           Layer 3 — deck manifest review
     transcript-review.html      Layer 4 — narration timeline review
+    slidechange-review.html     Layer 5 — slide-change validation
   README.md                     this file
 ```
 
@@ -124,6 +125,7 @@ mpk --version
 | | `probe` | Format and loudness measurements. **Layer 7 input** |
 | **video** | `probe` | Resolution, fps, codec, bitrate. **TGT-001…008** |
 | | `uniquefps` | Unique frames per second. **TGT-013** |
+| | `slidechanges` | When the picture changes. **Layer 5 step 1** |
 | **check** | `manifest` | Validate a Layer 3 manifest against the layer's rules |
 
 Every command that produces a reviewable artifact has a matching `check`:
@@ -252,6 +254,37 @@ the errors cluster in exactly the segments that carry meaning.
 
 Models download from Hugging Face on first use. On a blocked network, fetch one
 elsewhere and pass `--model-dir`, or give `--model` a local path.
+
+### Where the slides actually change
+
+```bash
+mpk video slidechanges res/workdir/V017.mp4 \
+    --video-id v017 --thumbs -o res/workdir/v017.changes.json
+
+mpk review build res/workdir/v017.changes.json \
+    -t slidechange-review -o res/workdir/v017.changes.html
+```
+
+**A pause is not a slide change.** On V017 the professor stops speaking at 4:09
+and the slide turns at **4:13.75** — he finishes the thought, pauses, then
+advances. Deriving slide windows from transcript pauses would put every boundary
+about four seconds early, and the symptom would surface two layers downstream
+looking like a sync bug.
+
+The metric is the mean absolute difference between consecutive greyscale frames,
+sampled at 4/s and 160×90. A slide turn moves most of the picture at once; a
+cursor does not. 15 seconds for an 8-minute video, and no image library — raw
+frames straight out of ffmpeg into numpy.
+
+**`--thumbs` is what makes it checkable.** It embeds the frame either side of
+each change, so the review page shows before and after and you decide what each
+one was. Four verdicts: `slide_change`, `in_slide_build`, `not_a_change`, `ask` —
+the same three-field line format as the transcript review.
+
+**`strong` and `weak` describe how much moved, not whether it was a slide turn.**
+On V017 a confirmed slide change scored **17.00** while the opening fade — not a
+slide change — scored **160.15**. The threshold is a filter, never a verdict
+(OBS-035).
 
 ### Audio — the two paths must stay separate
 
