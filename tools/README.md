@@ -16,7 +16,7 @@ tools/
   templates/
     slide-review.html           Layer 3 — deck manifest review
     transcript-review.html      Layer 4 — narration timeline review
-    slidechange-review.html     Layer 5 — slide-change validation
+    slidechange-review.html     Layer 5 — window / slide-identity review
   README.md                     this file
 ```
 
@@ -125,7 +125,7 @@ mpk --version
 | | `probe` | Format and loudness measurements. **Layer 7 input** |
 | **video** | `probe` | Resolution, fps, codec, bitrate. **TGT-001…008** |
 | | `uniquefps` | Unique frames per second. **TGT-013** |
-| | `slidechanges` | When the picture changes. **Layer 5 step 1** |
+| | `slidechanges` | What is on screen when — changes, slide identity, focus arrow. **Layer 5 step 1** |
 | **check** | `manifest` | Validate a Layer 3 manifest against the layer's rules |
 
 Every command that produces a reviewable artifact has a matching `check`:
@@ -255,38 +255,71 @@ the errors cluster in exactly the segments that carry meaning.
 Models download from Hugging Face on first use. On a blocked network, fetch one
 elsewhere and pass `--model-dir`, or give `--model` a local path.
 
-### Where the slides actually change
+### What is on screen, when
 
 ```bash
 mpk video slidechanges res/workdir/V017.mp4 \
-    --video-id v017 --thumbs -o res/workdir/v017.changes.json
-
-mpk review build res/workdir/v017.changes.json \
-    -t slidechange-review -o res/workdir/v017.changes.html
+    --video-id v017 --deck "res/inputs/P17-OS-PS-Bounded Buffer Problem.pptx" \
+    --deck-id v017 \
+    -o res/workdir/v017.changes.json \
+    --html res/workdir/v017.changes.html
 ```
 
-**A pause is not a slide change.** On V017 the professor stops speaking at 4:09
-and the slide turns at **4:13.75** — he finishes the thought, pauses, then
-advances. Deriving slide windows from transcript pauses would put every boundary
-about four seconds early, and the symptom would surface two layers downstream
-looking like a sync bug.
+One pass, three answers. About a minute for an eight-minute video.
 
-The metric is the mean absolute difference between consecutive greyscale frames,
-sampled at 4/s and 160×90. A slide turn moves most of the picture at once; a
-cursor does not. 15 seconds for an 8-minute video, and no image library — raw
-frames straight out of ffmpeg into numpy.
+**1 · When the picture changes.** A pause is **not** a slide change. On V017 the
+professor stops speaking at 4:09 and the slide turns at **4:13.75** — he finishes
+the thought, pauses, then advances. Deriving slide windows from transcript pauses
+puts every boundary about four seconds early, and the symptom surfaces two layers
+downstream looking like a sync bug.
 
-**`--thumbs` is what makes it checkable.** It embeds the frame either side of
-each change, so the review page shows before and after and you decide what each
-one was. Four verdicts: `slide_change`, `in_slide_build`, `not_a_change`, `ask` —
-the same three-field line format as the transcript review.
+**Two metrics run together, because one is blind where the other is not.**
+
+| Metric | Catches | Misses |
+|---|---|---|
+| mean absolute difference | a slide turn — most of the picture moves | a cross-dissolve, a logo swap on a white card |
+| **% of pixels changed** | exactly those — 1% of pixels changing hugely | nothing the first one catches |
+
+V017's entire intro sequence is invisible to the mean: three cards cross-dissolving,
+scoring **1.5–2.8** against a threshold of 15. The second metric sees all of it.
+
+**2 · Which slide it is.** With `--deck`, the deck is rendered and each window's
+middle frame matched against it by normalised cross-correlation.
+
+This is not a nicety. On V017 the ordering assumption — window *n* is slide *n* —
+was **wrong**:
+
+| Deck slide | Best match | Appears |
+|---|---|---|
+| slide 1 | 0.495 | **never** |
+| slide 2 | 0.527 | **never** |
+| slide 3 | **0.996** | 01:22.75 – 02:36.00 |
+| slide 4 | **0.996** | 02:36.00 – 04:13.75 |
+| slide 5 | **0.996** | 04:13.75 – 07:36.50 |
+
+The first 82 seconds is a presenter composition that exists in no deck. A window
+with no match is reported as `not_in_deck` — **not an error**, and exactly the case
+a human needs to look at.
+
+**Neighbouring windows showing the same picture are merged.** An event is not always
+a new slide: a focus arrow moving, or a presenter shifting, changes enough pixels to
+trip the detector while the slide underneath never turns. Without merging, V017's
+slide 4 arrives as four windows and Layer 8 gets four boundaries where the deck has
+one.
+
+**3 · Where he pointed.** The source video carries a hand-placed orange arrow marking
+what is being discussed. It is extracted as `focus_ground_truth`: `x` says which
+column, `y` says roughly which line.
+
+**Use it to check a focus map, never to build one.** On V017 it covers 28.6% of
+deck-slide time in 20 runs — enough to catch a wrong answer, nowhere near enough to
+produce a right one.
 
 **`strong` and `weak` describe how much moved, not whether it was a slide turn.**
-On V017 a confirmed slide change scored **17.00** while the opening fade — not a
-slide change — scored **160.15**. The threshold is a filter, never a verdict
-(OBS-035).
+A confirmed V017 slide change scored **17.00** while the opening fade — not a slide
+change — scored **160.15**. The threshold is a filter, never a verdict (OBS-035).
 
-### Audio — the two paths must stay separate
+### Audio — the two paths must stay separate### Audio — the two paths must stay separate
 
 ```bash
 mpk audio extract V017.mp4 -o V017-master.wav   # 48 kHz stereo — delivery

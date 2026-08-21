@@ -1,32 +1,40 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<title>Slide-change review — where the picture changes</title>
+<title>Slide-change review — what is on screen, when</title>
 <style>
 :root{--bg:#0f1524;--pn:#151d31;--ln:#26314b;--tx:#e8edf7;--t2:#a8b6d2;--dm:#6a7898;
---ok:#3FD0C9;--wn:#F2A33C;--bd:#FF6B6B;--pr:#7FB2F0;--now:#FFD84D}
+--ok:#3FD0C9;--wn:#F2A33C;--bd:#FF6B6B;--pr:#7FB2F0;--vi:#B79CF5}
 *{box-sizing:border-box}
 body{margin:0;padding:22px 20px 90px;background:var(--bg);color:var(--tx);
 font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
 .wrap{max-width:1180px;margin:0 auto}
 h1{font-size:20px;margin:0 0 4px;font-weight:650}
 .sub{color:var(--t2);font-size:13px;margin-bottom:16px}.sub b{color:var(--tx)}
-.counts{display:flex;flex-wrap:wrap;gap:20px;padding:12px 16px;margin-bottom:16px;
+h3{font-size:12px;margin:30px 0 10px;color:var(--t2);text-transform:uppercase;
+letter-spacing:.08em;font-weight:600}
+.counts{display:flex;flex-wrap:wrap;gap:20px;padding:12px 16px;margin-bottom:8px;
 background:var(--pn);border:1px solid var(--ln);border-radius:8px;font-size:13px;color:var(--t2)}
 .counts b{color:var(--tx);font-size:16px;font-weight:650}
-.counts .s b{color:var(--ok)} .counts .w b{color:var(--wn)}
+.counts .ok b{color:var(--ok)} .counts .wn b{color:var(--wn)} .counts .bd b{color:var(--bd)}
 .ev{background:var(--pn);border:1px solid var(--ln);border-radius:10px;
 padding:14px 16px;margin-bottom:14px}
-.ev.strong{border-left:3px solid var(--ok)} .ev.weak{border-left:3px solid var(--wn)}
+.ev.slide{border-left:3px solid var(--ok)} .ev.not_in_deck{border-left:3px solid var(--bd)}
+.ev.unknown{border-left:3px solid var(--dm)}
 .hd{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
 .t{font-family:ui-monospace,Menlo,monospace;font-size:17px;color:var(--pr);font-weight:600}
-.tier{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;
+.pill{font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:2px 9px;
 border-radius:99px;font-weight:600}
-.tier.strong{background:rgba(63,208,201,.15);color:var(--ok)}
-.tier.weak{background:rgba(242,163,60,.15);color:var(--wn)}
+.pill.slide{background:rgba(63,208,201,.15);color:var(--ok)}
+.pill.not_in_deck{background:rgba(255,107,107,.15);color:var(--bd)}
+.pill.unknown{background:rgba(106,120,152,.2);color:var(--dm)}
+.pill.strong{background:rgba(63,208,201,.15);color:var(--ok)}
+.pill.weak{background:rgba(242,163,60,.15);color:var(--wn)}
+.pill.pixel_fraction{background:rgba(183,156,245,.16);color:var(--vi)}
+.pill.mean{background:rgba(127,178,240,.16);color:var(--pr)}
+.pill.both{background:rgba(63,208,201,.15);color:var(--ok)}
 .meta{color:var(--dm);font-size:12px;font-family:ui-monospace,Menlo,monospace}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:760px){.pair{grid-template-columns:1fr}}
-.side{min-width:0}
 .cap{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dm);
 margin-bottom:5px;font-weight:600}
 img{width:100%;height:auto;display:block;border-radius:5px;border:1px solid var(--ln);background:#000}
@@ -35,83 +43,116 @@ border:1px dashed var(--ln);border-radius:5px}
 .line{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--t2);
 background:rgba(255,255,255,.03);border:1px solid var(--ln);border-radius:5px;
 padding:8px 11px;margin-top:11px;user-select:all}
-h3{font-size:12px;margin:28px 0 8px;color:var(--t2);text-transform:uppercase;
-letter-spacing:.08em;font-weight:600}
+.warn{font-size:12.5px;color:var(--wn);margin-top:9px;line-height:1.5}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--pn);
+border:1px solid var(--ln);border-radius:8px;overflow:hidden}
+th,td{padding:8px 12px;border-bottom:1px solid var(--ln);text-align:left}
+th{color:var(--t2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+tr:last-child td{border-bottom:none}
+td.n{font-family:ui-monospace,Menlo,monospace;color:var(--dm);white-space:nowrap}
+.bar{position:relative;height:9px;background:rgba(255,255,255,.06);border-radius:99px}
+.bar i{position:absolute;top:0;bottom:0;background:var(--vi);border-radius:99px;opacity:.85}
 .note{font-size:13px;color:var(--t2);background:var(--pn);border:1px solid var(--ln);
-border-radius:8px;padding:12px 16px}
-.note code{color:var(--tx);font-size:12.5px}
+border-radius:8px;padding:12px 16px;margin-bottom:14px}.note b{color:var(--tx)}
 footer{margin-top:32px;color:var(--dm);font-size:11.5px;line-height:1.6}
 </style></head><body><div class="wrap" id="app"></div>
 
 <!-- ══════════════════════════════════════════════════════════════════════
-     THE CHANGES. Replace the contents of this block and change nothing
-     else. The page renders whatever is here, so the two cannot disagree.
+     THE DATA. Replace the contents of this block and change nothing else.
+     The page renders whatever is here, so the two cannot disagree.
      ══════════════════════════════════════════════════════════════════════ -->
 <script type="application/json" id="manifest">
-{"video_id":"REPLACE_ME","metadata":{},"changes":[]}
+{"video_id":"REPLACE_ME","metadata":{},"changes":[],"windows":[],"focus_ground_truth":[]}
 </script>
 
 <script>
 const D = JSON.parse(document.getElementById('manifest').textContent);
-const M = D.metadata || {}, C = D.changes || [];
+const M = D.metadata || {}, C = D.changes || [], W = D.windows || [], F = D.focus_ground_truth || [];
 const e = s => s==null?'':String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const mmss = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${(s%60).toFixed(2).padStart(5,'0')}`;
+const K = M.counts || {}, dur = M.duration_s || 1;
 
-const strong = C.filter(c => c.tier === 'strong').length;
+const img = (src, cap) => `<div><div class="cap">${cap}</div>` +
+  (src ? `<img src="${src}" alt="${cap}">` : `<div class="noimg">no image embedded</div>`) + `</div>`;
 
-const cards = C.map((c, i) => {
-  const img = (src, cap) => `<div class="side"><div class="cap">${cap}</div>` +
-    (src ? `<img src="${src}" alt="${cap}">` : `<div class="noimg">no frame embedded —
-     re-run with <code>--thumbs</code></div>`) + `</div>`;
-  return `<div class="ev ${e(c.tier)}">
+const windows = W.map(w => `
+  <div class="ev ${e(w.kind)}">
     <div class="hd">
-      <span class="t">${mmss(c.t)}</span>
-      <span class="tier ${e(c.tier)}">${e(c.tier)}</span>
-      <span class="meta">score ${c.score} · cluster ${mmss(c.spans_s[0])}–${mmss(c.spans_s[1])}
-        · ${c.frames_in_cluster} frame(s)</span>
+      <span class="t">${mmss(w.start)} – ${mmss(w.end)}</span>
+      <span class="pill ${e(w.kind)}">${e(w.slide_id || w.kind.replace(/_/g,' '))}</span>
+      <span class="meta">${w.duration_s}s${w.match_score!=null
+        ? ` · match ${w.match_score} · runner-up ${w.runner_up_score}` : ''}</span>
     </div>
     <div class="pair">
-      ${img(c.before, 'before')}
-      ${img(c.after, 'after')}
+      ${img(w.frame, 'frame from the video')}
+      ${img(w.render, w.slide_id ? 'matched deck slide' : 'no matching deck slide')}
     </div>
-    <div class="line">${mmss(c.t)} | slide_change | </div>
-  </div>`;
-}).join('');
+    ${w.note ? `<div class="warn">${e(w.note)}</div>` : ''}
+    <div class="line">${mmss(w.start)} | ${e(w.slide_id||'not_in_deck')} | </div>
+  </div>`).join('');
+
+const changes = `<table><tr><th>at</th><th>mean</th><th>% pixels</th><th>seen by</th>
+  <th>tier</th><th>cluster</th></tr>` + C.map(c => `<tr>
+  <td class="n">${mmss(c.t)}</td><td class="n">${c.score}</td>
+  <td class="n">${c.pct_pixels_changed}%</td>
+  <td><span class="pill ${e(c.seen_by)}">${e(c.seen_by.replace(/_/g,' '))}</span></td>
+  <td><span class="pill ${e(c.tier)}">${e(c.tier)}</span></td>
+  <td class="n">${mmss(c.spans_s[0])}–${mmss(c.spans_s[1])}</td></tr>`).join('') + `</table>`;
+
+const focus = F.length ? `<table><tr><th>from</th><th>to</th><th>held</th>
+  <th>column (x)</th><th>line band (y)</th><th style="width:34%">on the timeline</th></tr>`
+  + F.map(f => `<tr>
+    <td class="n">${mmss(f.start)}</td><td class="n">${mmss(f.end)}</td>
+    <td class="n">${f.duration_s}s</td>
+    <td class="n">${f.x} ${f.x < 0.3 ? '· left' : f.x < 0.7 ? '· centre' : '· right'}</td>
+    <td class="n">${f.y_from} → ${f.y_to}</td>
+    <td><div class="bar"><i style="left:${100*f.start/dur}%;width:${Math.max(0.4,100*(f.end-f.start)/dur)}%"></i></div></td>
+  </tr>`).join('') + `</table>`
+  : `<div class="note">No focus arrow found. Either this video has none, or the colour
+     threshold needs adjusting for its palette.</div>`;
 
 document.getElementById('app').innerHTML = `
-<h1>${e(D.video_id)} — slide-change review</h1>
+<h1>${e(D.video_id)} — what is on screen, when</h1>
 <div class="sub"><b>${e(M.source_file||'')}</b>
- ${M.duration_s?`· ${mmss(M.duration_s)}`:''}
- ${M.sample_fps?`· sampled ${M.sample_fps}/s at ${(M.sample_size||[]).join('×')}`:''}</div>
+ ${M.deck_file?`· deck <b>${e(M.deck_file)}</b>`:'· <b style="color:var(--wn)">no deck given — windows carry no slide identity</b>'}
+ ${M.duration_s?`· ${mmss(M.duration_s)}`:''}</div>
 
 <div class="counts">
- <span class="s"><b>${strong}</b> strong</span>
- <span class="w"><b>${C.length - strong}</b> weak</span>
- <span>threshold <b>${M.threshold}</b> / <b>${M.weak_threshold}</b></span>
- <span>noise floor p99 <b>${M.noise_floor_p99}</b></span>
+ <span class="ok"><b>${K.windows_matched||0}</b> windows matched to a slide</span>
+ <span class="bd"><b>${K.windows_not_in_deck||0}</b> not in the deck</span>
+ <span><b>${K.changes||0}</b> changes</span>
+ <span class="wn"><b>${K.focus_runs||0}</b> focus runs</span>
+ <span>${M.deck_pages_rendered||0} deck pages rendered</span>
 </div>
 
-<div class="note"><b>What you are deciding.</b> The tool found where the picture
-changed. It does not know <i>why</i>. Look at each pair and say which it is —
-a slide turn, a build inside one slide, or neither. Opening and closing fades
-score high and are <b>not</b> slide changes.</div>
+<div class="note"><b>What you are deciding.</b> For each window: is the matched slide
+right, and for anything marked <b>not in the deck</b>, what is it — a title card, an
+outro, or a composition built for the video? A window with no match is <b>not an
+error</b>. Copy each line into <code>&lt;video&gt;.windows.txt</code> and set the middle
+field.</div>
 
-${cards}
+<h3>Windows — what is held on screen</h3>
+${windows}
 
-<h3>How to record your verdicts</h3>
-<div class="note">Each card carries a pre-filled line. Copy it into
-<code>&lt;video&gt;.changes.txt</code> and set the middle field:
-<br><br>
-<code>slide_change</code> · the deck advanced<br>
-<code>in_slide_build</code> · same slide, something appeared<br>
-<code>not_a_change</code> · fade, cursor, compression wobble<br>
-<code>ask</code> · cannot tell from two frames
-<br><br>
-Same three-field format as the transcript review, so one habit covers both.</div>
+<h3>Changes — where the picture moved</h3>
+<div class="note"><b>Two metrics, because one is blind where the other is not.</b>
+<b>mean</b> catches a slide turn, which moves most of the picture. It cannot see a logo
+cross-dissolving on a white card — that is about 1% of pixels and scores 2 against a
+threshold of ${e(M.thresholds&&M.thresholds.weak)}. <b>% pixels</b> catches exactly that.
+Rows marked <span class="pill pixel_fraction">pixel fraction</span> are invisible to the
+mean alone.</div>
+${changes}
 
-<footer>Rendered from the data embedded in this file, so the cards and the JSON
-cannot disagree. The metric is the mean absolute difference between consecutive
-greyscale frames on a 0–255 scale — a slide turn moves most of the picture at
-once; a cursor does not. A pause in the narration is not a slide change: on V017
-the professor stops at 4:09 and the slide turns at 4:13.75.</footer>`;
+<h3>Focus arrow — where he pointed, extracted from the source</h3>
+<div class="note">The source video carries a hand-placed arrow marking what is being
+discussed. This is <b>ground truth</b>, not a guess: use it to <b>check</b> a later
+layer's focus map, not to build one. It covers only part of the run time, so it can
+confirm but never replace.</div>
+${focus}
+
+<footer>Rendered from the data embedded in this file, so the tables and the JSON cannot
+disagree. Slide identity is a normalised cross-correlation between each window's middle
+frame and the rendered deck, at ${e((M.thresholds||{}).slide_match_min)} minimum.
+A pause is not a slide change: on V017 the professor stops at 4:09 and the slide turns at
+4:13.75.</footer>`;
 </script></body></html>

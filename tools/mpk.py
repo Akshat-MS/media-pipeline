@@ -17,6 +17,7 @@ import copy
 import json
 import re
 import shutil
+import tempfile
 import subprocess
 import sys
 from pathlib import Path
@@ -1236,31 +1237,58 @@ def cmd_video_probe(args):
          args.out)
 
 
-def _gray_frames(path: str, fps: float, w: int, h: int):
-    """Every frame at `fps`, greyscale, w x h, as one numpy array.
+def _render_deck(path: str, dpi: int = 100) -> list:
+    """Render a deck to PNGs in a temp dir. Reuses the same soffice -> pdftoppm
+    path as `mpk deck render`, at a lower dpi because these are only ever
+    compared at 96x54."""
+    soffice = next((c for c in ("soffice", "libreoffice") if have(c)), None)
+    if not soffice:
+        die("LibreOffice not found — needed to render the deck for slide matching. "
+            "Install it, or run without --deck.")
+    if not have("pdftoppm"):
+        die("pdftoppm not found (poppler-utils) — needed to turn the rendered PDF "
+            "into images. Install it, or run without --deck.")
+    tmp = Path(tempfile.mkdtemp(prefix="mpk-render-"))
+    stem = Path(path).stem
+    subprocess.run([soffice, "--headless", "--convert-to", "pdf", "--outdir",
+                    str(tmp), path], check=True, stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
+    pdf = tmp / (stem + ".pdf")
+    if not pdf.exists():
+        die(f"LibreOffice produced no PDF for {path}")
+    subprocess.run(["pdftoppm", "-png", "-r", str(dpi), str(pdf), str(tmp / "s")],
+                   check=True)
+    pages = sorted(tmp.glob("s-*.png"))
+    if not pages:
+        die(f"no pages rendered from {path}")
+    return pages
 
-    Raw video straight out of ffmpeg — no image library. numpy arrives with
-    faster-whisper, so this adds no dependency the project did not already have.
-    A 160x90 frame is 14 KB; eight minutes at 4 fps is about 27 MB, which is
-    cheap enough to hold and precise enough to see a slide change."""
+
+def _frames(path: str, fps: float, w: int, h: int, rgb: bool = False):
+    """Every frame at `fps`, w x h, as one numpy array.
+
+    Raw video straight out of ffmpeg — no image library for the greyscale path.
+    numpy arrives with faster-whisper, so this adds nothing the project did not
+    already depend on."""
     try:
         import numpy as np
     except ImportError:
         die("numpy is required for this command (it ships with faster-whisper): "
             "pip install numpy")
     if not have("ffmpeg"):
-        die("ffmpeg is required for this command — install it with your package "
-            "manager (apt install ffmpeg)")
+        die("ffmpeg is required — install it with your package manager "
+            "(apt install ffmpeg)")
+    fmt, chan = ("rgb24", 3) if rgb else ("gray", 1)
     p = subprocess.run(
         ["ffmpeg", "-v", "error", "-i", path, "-vf", f"fps={fps},scale={w}:{h}",
-         "-pix_fmt", "gray", "-f", "rawvideo", "-"],
-        capture_output=True)
+         "-pix_fmt", fmt, "-f", "rawvideo", "-"], capture_output=True)
     if p.returncode != 0:
         die(f"ffmpeg failed reading {path}: {p.stderr.decode()[:400]}")
-    n = len(p.stdout) // (w * h)
+    n = len(p.stdout) // (w * h * chan)
     if n < 2:
         die(f"only {n} frame(s) decoded — is {path} a video?")
-    return np.frombuffer(p.stdout[:n * w * h], dtype="uint8").reshape(n, w * h), np
+    a = np.frombuffer(p.stdout[:n * w * h * chan], dtype="uint8")
+    return (a.reshape(n, h, w, 3) if rgb else a.reshape(n, h * w)), np
 
 
 def _thumb(path: str, t: float, width: int) -> str:
@@ -1268,32 +1296,88 @@ def _thumb(path: str, t: float, width: int) -> str:
     p = subprocess.run(
         ["ffmpeg", "-v", "error", "-ss", f"{max(t, 0):.3f}", "-i", path,
          "-frames:v", "1", "-vf", f"scale={width}:-2", "-q:v", "6",
-         "-f", "image2", "-vcodec", "mjpeg", "-"],
-        capture_output=True)
+         "-f", "image2", "-vcodec", "mjpeg", "-"], capture_output=True)
     if p.returncode != 0 or not p.stdout:
         return ""
     return "data:image/jpeg;base64," + base64.b64encode(p.stdout).decode()
 
 
+def _png_uri(path, width: int = 480) -> str:
+    try:
+        from PIL import Image
+    except ImportError:
+        return ""
+    import io
+    im = Image.open(path).convert("RGB")
+    im = im.resize((width, max(1, round(im.height * width / im.width))))
+    b = io.BytesIO(); im.save(b, "JPEG", quality=72)
+    return "data:image/jpeg;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def _norm(x, np):
+    x = x - x.mean()
+    sd = x.std()
+    return x / sd if sd > 1e-6 else x
+
+
+def _build_review(data: dict, out_path: str, template: str):
+    """Emit the review page from the data we just produced.
+
+    The page is a complete HTML file whose embedded JavaScript renders whatever
+    is in its data block — so the table and the JSON are the same object and
+    cannot disagree. This helper only substitutes the block."""
+    tpl = resolve_template(template).read_text(encoding="utf-8")
+    html, n = _DATA_BLOCK.subn(
+        lambda m: m.group(1) + json.dumps(data, indent=1, ensure_ascii=False)
+        + m.group(2), tpl)
+    if n != 1:
+        die(f"expected exactly one data block in {template}")
+    Path(out_path).write_text(html, encoding="utf-8")
+    print(f"wrote {out_path}  ({Path(out_path).stat().st_size:,} bytes) — {template}",
+          file=sys.stderr)
+
+
 def cmd_video_slidechanges(args):
-    """When the picture changes — measured, not inferred from the narration.
+    """What is on screen, second by second — measured from the picture.
 
-    This exists because a pause is NOT a slide change. On V017 the professor
-    stops speaking at 4:09 and the slide turns at 4:13.75 — he finishes the
-    thought, pauses, then advances. Building slide windows from transcript
-    pauses would put every boundary about four seconds early, and the symptom
-    would surface two layers later looking like a sync bug.
+    Three things this answers that nothing else can:
 
-    The measurement is a mean absolute difference between consecutive sampled
-    frames. A slide change moves most of the picture at once; a cursor, a
-    talking head or a compression wobble does not."""
-    frames, np = _gray_frames(args.file, args.fps, args.width, args.height)
-    diff = np.abs(np.diff(frames.astype("float32"), axis=0)).mean(1)
+    1. WHEN the picture changes. A pause is NOT a slide change: on V017 the
+       professor stops speaking at 4:09 and the slide turns at 4:13.75. He
+       finishes the thought, pauses, then advances. Deriving slide windows from
+       transcript pauses puts every boundary about four seconds early, and the
+       symptom surfaces two layers later looking like a sync bug.
+
+    2. WHICH slide it is. The deck is rendered and each window's middle frame is
+       matched against it. Without this the mapping is an assumption — and on
+       V017 that assumption was WRONG: deck slides 1 and 2 never appear in the
+       video at all, and the first 82 seconds is a presenter composition that
+       exists in no deck.
+
+    3. WHERE HE POINTED. The source video carries a hand-placed orange arrow
+       marking what he is talking about. It is extracted as ground truth, so a
+       later layer's focus map can be CHECKED rather than argued about.
+
+    Two metrics run together, because one is blind where the other is not. Mean
+    absolute difference catches a slide turn, which moves most of the picture.
+    It cannot see a logo cross-dissolving on a white card — that is 1% of pixels
+    and scores 2 against a threshold of 15. Percentage-of-pixels-changed catches
+    exactly that case. V017's whole intro sequence is invisible to the first
+    metric and obvious to the second."""
+    frames, np = _frames(args.file, args.fps, args.width, args.height)
+    f32 = frames.astype("float32")
+    d = np.abs(np.diff(f32, axis=0))
+    mean_d = d.mean(1)
+    frac_d = (d > args.pixel_delta).mean(1) * 100.0
     t_of = lambda i: (i + 1) / args.fps
+    dur = len(frames) / args.fps
 
-    hits = [i for i in range(len(diff)) if diff[i] >= args.weak_threshold]
+    # ---- events: either metric is enough. A cross-dissolve never trips the
+    #      first; a slide turn always trips both.
+    hit = [i for i in range(len(mean_d))
+           if mean_d[i] >= args.weak_threshold or frac_d[i] >= args.frac_threshold]
     clusters, cur = [], []
-    for i in hits:
+    for i in hit:
         if cur and t_of(i) - t_of(cur[-1]) > args.min_gap:
             clusters.append(cur); cur = []
         cur.append(i)
@@ -1302,59 +1386,195 @@ def cmd_video_slidechanges(args):
 
     changes = []
     for c in clusters:
-        peak = max(c, key=lambda i: float(diff[i]))
-        score = float(diff[peak])
+        peak = max(c, key=lambda i: float(mean_d[i]))
+        m, f = float(mean_d[peak]), float(max(frac_d[i] for i in c))
         changes.append({
             "t": round(t_of(peak), 3),
-            "score": round(score, 2),
-            "tier": "strong" if score >= args.threshold else "weak",
-            # tier describes HOW MUCH of the picture moved. It does NOT mean
-            # "is a slide change" — V017's 01:22.75 turn scored 17.00 and was
-            # confirmed by eye. See metadata.tier_meaning.
+            "score": round(m, 2),
+            "pct_pixels_changed": round(f, 2),
+            "seen_by": ("both" if m >= args.weak_threshold and f >= args.frac_threshold
+                        else "mean" if m >= args.weak_threshold else "pixel_fraction"),
+            "tier": "strong" if m >= args.threshold else "weak",
             "spans_s": [round(t_of(c[0]), 3), round(t_of(c[-1]), 3)],
             "frames_in_cluster": len(c),
-            "confirmed": None,          # only a human sets this
-            "verdict": None})           # slide_change | in_slide_build | not_a_change
+            "confirmed": None, "verdict": None})
+
+    # ---- windows: what is held between the changes
+    bounds = [0.0] + [ch["spans_s"][1] for ch in changes]
+    if bounds[-1] < dur - 0.5:
+        bounds.append(round(dur, 3))
+    windows = []
+    for a, b in zip(bounds, bounds[1:]):
+        if b - a < args.min_window:
+            continue
+        windows.append({"start": round(a, 3), "end": round(b, 3),
+                        "duration_s": round(b - a, 3),
+                        "slide_id": None, "match_score": None,
+                        "runner_up": None, "runner_up_score": None,
+                        "kind": "unknown", "confirmed": None})
+
+    # ---- which slide, if a deck was given
+    deck_pages = []
+    if args.deck:
+        pages = _render_deck(args.deck, args.render_dpi)
+        deck_pages = [str(p) for p in pages]
+        try:
+            from PIL import Image
+        except ImportError:
+            die("Pillow is required to match rendered slides: pip install pillow")
+        W2, H2 = args.match_width, args.match_height
+        refs = [_norm(np.asarray(Image.open(p).convert("L")
+                                 .resize((W2, H2), Image.BILINEAR),
+                                 dtype="float32").ravel(), np) for p in pages]
+        mid, _ = _frames(args.file, args.fps, W2, H2)
+        midf = mid.astype("float32")
+        for w in windows:
+            i = min(int(((w["start"] + w["end"]) / 2) * args.fps), len(midf) - 1)
+            fv = _norm(midf[i], np)
+            sc = [float((fv * r).mean()) for r in refs]
+            order = sorted(range(len(sc)), key=lambda k: sc[k], reverse=True)
+            best = order[0]
+            w["match_score"] = round(sc[best], 3)
+            w["runner_up"] = f"{Path(args.deck).stem}#{order[1] + 1}" if len(sc) > 1 else None
+            w["runner_up_score"] = round(sc[order[1]], 3) if len(sc) > 1 else None
+            if sc[best] >= args.match_min:
+                w["slide_id"] = f"{args.deck_id or Path(args.deck).stem}_s{best + 1:02d}"
+                w["slide_number"] = best + 1
+                w["kind"] = "slide"
+            else:
+                w["kind"] = "not_in_deck"
+                w["note"] = ("No deck slide matches this window. It is a title card, an "
+                             "outro, or a composition built for the video that exists in "
+                             "no deck. NOT an error — on V017 the first 82 seconds are "
+                             "exactly this.")
+
+        # ---- merge neighbours showing the SAME picture.
+        # An event is not always a new slide. A focus arrow moving, or the
+        # presenter shifting, changes enough pixels to trip the detector while
+        # the slide underneath never turns. Two adjacent windows resolving to
+        # one slide_id ARE one window, and saying otherwise hands Layer 8 four
+        # boundaries where the deck has one.
+        merged, dropped = [], 0
+        for w in windows:
+            prev = merged[-1] if merged else None
+            same = False
+            if prev is not None:
+                if w["slide_id"] and prev["slide_id"] == w["slide_id"]:
+                    same = True
+                elif w["kind"] == "not_in_deck" == prev["kind"]:
+                    ia = min(int(((prev["start"] + prev["end"]) / 2) * args.fps),
+                             len(midf) - 1)
+                    ib = min(int(((w["start"] + w["end"]) / 2) * args.fps), len(midf) - 1)
+                    same = float((_norm(midf[ia], np) * _norm(midf[ib], np)).mean()) > \
+                           args.merge_min
+            if same:
+                prev["end"] = w["end"]
+                prev["duration_s"] = round(prev["end"] - prev["start"], 3)
+                prev["match_score"] = max(prev["match_score"] or -1, w["match_score"] or -1)
+                prev["merged_from"] = prev.get("merged_from", 1) + 1
+                dropped += 1
+            else:
+                merged.append(w)
+        windows = merged
+        if dropped:
+            print(f"mpk: merged {dropped} window(s) that showed the same picture "
+                  f"as their neighbour", file=sys.stderr)
+
+    # ---- where he pointed
+    focus = []
+    if args.arrow:
+        rgbf, _ = _frames(args.file, args.arrow_fps, args.width, args.height, rgb=True)
+        a = rgbf.astype(int)
+        R, G, B = a[..., 0], a[..., 1], a[..., 2]
+        orange = ((R > args.arrow_r) & (G > 70) & (G < 175) & (B < 90)
+                  & ((R - B) > 110))
+        count = orange.reshape(len(a), -1).sum(1)
+        present = count >= args.arrow_min_px
+        i = 0
+        while i < len(present):
+            if present[i]:
+                j = i
+                while j < len(present) and present[j]:
+                    j += 1
+                if (j - i) / args.arrow_fps >= args.arrow_min_s:
+                    xs, ys = [], []
+                    for k in range(i, j):
+                        yy, xx = np.where(orange[k])
+                        xs.append(xx.mean() / args.width); ys.append(yy.mean() / args.height)
+                    focus.append({
+                        "start": round(i / args.arrow_fps, 2),
+                        "end": round(j / args.arrow_fps, 2),
+                        "duration_s": round((j - i) / args.arrow_fps, 2),
+                        "x": round(float(np.mean(xs)), 3),
+                        "y_from": round(float(np.min(ys)), 3),
+                        "y_to": round(float(np.max(ys)), 3),
+                        "note": "x says which column, y says roughly which line"})
+                i = j
+            else:
+                i += 1
+
+    strong = [c for c in changes if c["tier"] == "strong"]
+    out = {
+      "video_id": args.video_id or Path(args.file).stem,
+      "metadata": {
+        "source_file": Path(args.file).name,
+        "deck_file": Path(args.deck).name if args.deck else None,
+        "duration_s": round(dur, 3),
+        "sample_fps": args.fps, "sample_size": [args.width, args.height],
+        "metrics": {
+          "mean_abs_diff": "mean absolute difference between consecutive greyscale "
+                           "frames, 0-255. Catches a slide turn.",
+          "pct_pixels_changed": f"percentage of pixels changing by more than "
+                                f"{args.pixel_delta} levels. Catches a cross-dissolve or "
+                                f"a small logo swap, which the mean cannot see."},
+        "thresholds": {"strong": args.threshold, "weak": args.weak_threshold,
+                       "pct_pixels": args.frac_threshold, "min_gap_s": args.min_gap,
+                       "slide_match_min": args.match_min},
+        "noise_floor": {"mean_p50": round(float(np.percentile(mean_d, 50)), 3),
+                        "mean_p99": round(float(np.percentile(mean_d, 99)), 3),
+                        "pct_p99": round(float(np.percentile(frac_d, 99)), 3)},
+        "counts": {"changes": len(changes), "strong": len(strong),
+                   "weak": len(changes) - len(strong), "windows": len(windows),
+                   "windows_matched": sum(1 for w in windows if w["slide_id"]),
+                   "windows_not_in_deck": sum(1 for w in windows
+                                              if w["kind"] == "not_in_deck"),
+                   "focus_runs": len(focus)},
+        "deck_pages_rendered": len(deck_pages),
+        "tier_meaning": "How much of the picture moved, NOTHING MORE. 'weak' does not "
+                        "mean 'not a slide change': on V017 the 01:22.75 turn scored "
+                        "17.00 and was confirmed by eye, while the highest-scoring event "
+                        "in the whole video (160.15) was the opening fade, which is not a "
+                        "slide change at all.",
+        "threshold_provenance": "strong=15.0, set below the lowest CONFIRMED slide change "
+                                "measured so far (17.00, V017 01:22.75). One video is thin "
+                                "evidence for a constant — revisit after V018 (OBS-035).",
+        "extraction_path": "mpk_video_slidechanges", "mpk_version": __version__,
+        "note": "WHERE the picture changes, WHICH slide it is, and WHERE he pointed. "
+                "Never WHY. Every window still needs a human verdict in the review page."},
+      "changes": changes, "windows": windows, "focus_ground_truth": focus}
 
     if args.thumbs:
         for ch in changes:
-            ch["before"] = _thumb(args.file, ch["spans_s"][0] - args.thumb_lead, args.thumb_width)
-            ch["after"] = _thumb(args.file, ch["spans_s"][1] + args.thumb_lead, args.thumb_width)
+            ch["before"] = _thumb(args.file, ch["spans_s"][0] - args.thumb_lead,
+                                  args.thumb_width)
+            ch["after"] = _thumb(args.file, ch["spans_s"][1] + args.thumb_lead,
+                                 args.thumb_width)
+        for w in windows:
+            w["frame"] = _thumb(args.file, (w["start"] + w["end"]) / 2, args.thumb_width)
+            n = w.get("slide_number")
+            w["render"] = _png_uri(deck_pages[n - 1], args.thumb_width) if n else ""
 
-    dur = len(frames) / args.fps
-    strong = [c for c in changes if c["tier"] == "strong"]
-    out = {
-        "video_id": args.video_id or Path(args.file).stem,
-        "metadata": {
-            "source_file": Path(args.file).name,
-            "duration_s": round(dur, 3),
-            "sample_fps": args.fps,
-            "sample_size": [args.width, args.height],
-            "metric": "mean absolute difference between consecutive greyscale frames, 0-255",
-            "threshold": args.threshold,
-            "weak_threshold": args.weak_threshold,
-            "min_gap_s": args.min_gap,
-            "noise_floor_p50": round(float(np.percentile(diff, 50)), 3),
-            "noise_floor_p99": round(float(np.percentile(diff, 99)), 3),
-            "strong_count": len(strong),
-            "weak_count": len(changes) - len(strong),
-            "thumbnails_embedded": bool(args.thumbs),
-            "extraction_path": "mpk_video_slidechanges",
-            "mpk_version": __version__,
-            "note": "WHERE the picture changes, not WHAT changed and not WHY. "
-                    "A strong change is usually a slide turn and a weak one usually "
-                    "an in-slide build, but the tool does not know which — a human "
-                    "confirms each one in the review page. Opening and closing fades "
-                    "score high and are not slide changes."},
-        "changes": changes}
     emit(out, args.out)
-    print(f"mpk: {len(changes)} change(s) — {len(strong)} strong, "
-          f"{len(changes) - len(strong)} weak  (noise floor p99 "
-          f"{float(np.percentile(diff, 99)):.2f})", file=sys.stderr)
-    for ch in changes:
-        m, s_ = divmod(ch["t"], 60)
-        print(f"  {'STRONG' if ch['tier'] == 'strong' else 'weak  '} "
-              f"{int(m):02d}:{s_:05.2f}  score {ch['score']:7.2f}", file=sys.stderr)
+    mm = lambda v: f"{int(v // 60):02d}:{v % 60:05.2f}"
+    print(f"mpk: {len(changes)} change(s), {len(windows)} window(s), "
+          f"{len(focus)} focus run(s)", file=sys.stderr)
+    for w in windows:
+        tag = w["slide_id"] or ("NOT IN DECK" if w["kind"] == "not_in_deck" else "—")
+        sc = f"{w['match_score']:.3f}" if w["match_score"] is not None else "    -"
+        print(f"  {mm(w['start'])}–{mm(w['end'])}  {w['duration_s']:7.2f}s  "
+              f"{tag:16} match {sc}", file=sys.stderr)
+    if args.html:
+        _build_review(out, args.html, "slidechange-review")
 
 
 def cmd_video_uniquefps(args):
@@ -1567,28 +1787,49 @@ def build_parser():
     c.add_argument("file"); c.add_argument("--out", "-o")
     c.set_defaults(fn=cmd_video_probe)
     c = gs.add_parser("slidechanges",
-                      help="when the picture changes — slide turns and in-slide builds")
+                      help="what is on screen when — changes, slide identity, focus arrow")
     c.add_argument("file")
     c.add_argument("--out", "-o", required=True)
+    c.add_argument("--html", help="also write the review page here")
     c.add_argument("--video-id")
-    c.add_argument("--fps", type=float, default=4.0,
-                   help="frames sampled per second (default 4)")
-    c.add_argument("--width", type=int, default=160)
-    c.add_argument("--height", type=int, default=90)
+    c.add_argument("--deck", help="the .pptx — rendered and matched, so windows carry a "
+                                  "slide_id instead of an assumption")
+    c.add_argument("--deck-id", help="id prefix for matched slides (default: deck stem)")
+    c.add_argument("--fps", type=float, default=4.0)
+    c.add_argument("--width", type=int, default=192)
+    c.add_argument("--height", type=int, default=108)
     c.add_argument("--threshold", type=float, default=15.0,
-                   help="at or above this the change is tiered 'strong' — a measure of "
-                        "how much moved, NOT of whether it is a slide turn (default 15, "
-                        "set below the lowest confirmed real change: 17.0 on V017)")
-    c.add_argument("--weak-threshold", type=float, default=10.0,
-                   help="below this, ignore entirely (default 10)")
-    c.add_argument("--min-gap", type=float, default=2.0,
-                   help="changes closer than this are one event (default 2.0s)")
-    c.add_argument("--thumbs", action="store_true",
-                   help="embed a before/after frame per change, for the review page")
+                   help="mean-diff at or above this is tiered 'strong' — a measure of how "
+                        "much moved, NOT of whether it is a slide turn (default 15)")
+    c.add_argument("--weak-threshold", type=float, default=10.0)
+    c.add_argument("--frac-threshold", type=float, default=0.8,
+                   help="%% of pixels changed that counts as an event — catches "
+                        "cross-dissolves the mean cannot see (default 0.8)")
+    c.add_argument("--pixel-delta", type=int, default=40,
+                   help="a pixel counts as changed above this many levels (default 40)")
+    c.add_argument("--min-gap", type=float, default=2.0)
+    c.add_argument("--min-window", type=float, default=1.0,
+                   help="ignore windows shorter than this (default 1.0s)")
+    c.add_argument("--merge-min", type=float, default=0.93,
+                   help="two adjacent unmatched windows this alike are one window "
+                        "(default 0.93)")
+    c.add_argument("--match-min", type=float, default=0.80,
+                   help="correlation below this means no deck slide matches (default 0.80)")
+    c.add_argument("--match-width", type=int, default=96)
+    c.add_argument("--match-height", type=int, default=54)
+    c.add_argument("--render-dpi", type=int, default=100)
+    c.add_argument("--no-arrow", dest="arrow", action="store_false",
+                   help="skip focus-arrow extraction")
+    c.add_argument("--arrow-fps", type=float, default=2.0)
+    c.add_argument("--arrow-r", type=int, default=170)
+    c.add_argument("--arrow-min-px", type=int, default=6)
+    c.add_argument("--arrow-min-s", type=float, default=1.0)
+    c.add_argument("--no-thumbs", dest="thumbs", action="store_false",
+                   help="skip the embedded before/after frames")
     c.add_argument("--thumb-width", type=int, default=560)
-    c.add_argument("--thumb-lead", type=float, default=0.6,
-                   help="seconds either side of the cluster to grab the frames")
-    c.set_defaults(fn=cmd_video_slidechanges)
+    c.add_argument("--thumb-lead", type=float, default=0.6)
+    c.set_defaults(fn=cmd_video_slidechanges, arrow=True, thumbs=True)
+
     c = gs.add_parser("uniquefps", help="unique frames per second (TGT-013)")
     c.add_argument("file"); c.add_argument("--out", "-o")
     c.add_argument("--threshold", type=float, default=24.0)

@@ -58,6 +58,10 @@ attached. See `README.md` §7.
 | V017 human review | `res/workdir/v017.review.txt` | text | **a human, listening** | `mpk transcript apply` | per video | v1 | **not tracked** |
 | **V017 narration timeline** | `res/workdir/v017.transcript.json` | JSON | `mpk transcript apply` | **5, 8** | per video | v1 | **not tracked** |
 | V017 transcript review page | `res/workdir/v017.transcript.html` | HTML | `mpk transcript export` | human review | per video | v1 | **not tracked** |
+| **V017 windows + slide identity** | `res/workdir/v017.changes.json` | JSON | `mpk video slidechanges --deck` | **5, 8** | per video | v2 | **not tracked** |
+| V017 window review page | `res/workdir/v017.changes.html` | HTML | same command, `--html` | human review | per video | v2 | **not tracked** |
+| ekLakshya brand assets | `res/library/icons/` | png + jpeg | supplied + derived | 2 (contract v6) | project | v1 | **tracked** |
+| Footer specimen | `docs/shared/specimen/footer-themes.html` | HTML | Layer 2 | human review | global | v2 | current |
 | Audio master, 48 kHz stereo | `res/workdir/<v>-master.wav` | wav | `mpk audio extract` | 7, final mux | per video | — | **not tracked** |
 | Audio ASR copy, 16 kHz mono | `res/workdir/<v>-asr.wav` | wav | `mpk audio asr` | 4 | per video | — | **not tracked** |
 | Raw ASR output | `res/workdir/<v>.asr.json` | JSON | `mpk transcript build` | 4 (verify) | per video | — | **not tracked** |
