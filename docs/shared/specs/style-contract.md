@@ -1,4 +1,4 @@
-# Layer 1 — Global Style Contract · Token Table
+# Layer 2 — Global Style Contract · Token Table
 
 **Artifact:** `global_style_contract` · **Version:** v3 (approved)
 **Runtime file:** `config/style/global_style_contract.json` — generated from §12 of this document
@@ -113,9 +113,51 @@ of the original gradient (which swung 5.91 → 11.18:1 across the canvas).
 
 ---
 
-## 4 · Palette — roles, not entity assignments
+## 4 · Palette — slots, not meanings
 
-Roles are defined here. **Which entity claims which role is Layer 4.**
+This section defines **slots**: colours verified to be distinguishable from one
+another, each with a redundant non-colour channel (§8). A slot is a visual fact.
+It carries no meaning.
+
+**Binding a meaning to a slot is Layer 6's decision, not this document's.**
+Nothing here says what amber means. `state_a`, `state_b`, `state_c` are
+deliberately empty names and must stay that way — naming a slot `blocked_waiting`
+would force a rename across every artifact the day a topic needs the slot for
+something else.
+
+### The binding rule — one direction only
+
+> **The same meaning takes the same slot in every video.**
+> The same slot may carry different meanings in different videos.
+
+The rule runs one way on purpose. A viewer never watches two videos at once, so
+a slot reused across topics costs nothing. A meaning that changes colour between
+videos costs trust — it is the defect this rule exists to prevent.
+
+Because it is one-way, **many meanings may share one slot.** The slots are not a
+budget of three ideas; they are three distinguishable groups.
+
+### When two meanings may share a slot
+
+> **Two meanings may share a slot unless a viewer would ever need to tell them
+> apart.**
+
+| Example pair | Need to tell apart? | Verdict |
+|---|---|---|
+| code-block edge · request line | No — a panel border and an arrow between nodes are never compared | share one slot |
+| error code · working code | **Yes** — that distinction *is* the teaching point | different slots |
+
+Layer 6's binding table must list every meaning bound to each slot, so a
+reviewer can read one table and ask that single question of each slot. A
+binding that is not written down cannot be checked.
+
+### Ownership
+
+| | |
+|---|---|
+| **This document owns** | which slots exist, their colours, their measured contrast, their redundant channels |
+| **Layer 6 owns** | which meaning takes which slot |
+| **Scope of the binding** | **project-level, extended per topic, never contradicted.** "Blocked" appears in bounded buffer, reader-writer *and* Banker's. Per-topic binding files would each choose a slot independently and could disagree — breaking the one-way rule with the very artifact meant to enforce it. Shared meanings are decided once; a topic adds only what is unique to it |
 
 | Role | Colour | Shared across themes? |
 |---|---|---|
@@ -134,6 +176,29 @@ State roles are theme-independent so semantic colour meaning stays identical
 across all five videos regardless of which background is chosen.
 
 ---
+
+## 4a · Bindings this contract makes, and why
+
+Three tokens in this document bind a slot to a meaning. They were scattered
+across §6 and §7 and read as styling rather than as the semantic commitments
+they are. They are collected here so Layer 6 can see what is already taken.
+
+| Token | Slot | Why it is here rather than in Layer 6 |
+|---|---|---|
+| `type_styles.code_keyword.colour_role` | `state_a` | A keyword is a keyword in every topic. Syntax colouring is typography, not subject matter |
+| `type_styles.code_comment.colour_role` | `eyebrow` | Same reasoning. `eyebrow` is a text token, not one of the three slots |
+| `code_block.border_left_role` | `state_b` | The edge marks *"this is code"* — a document-wide category, not a topic's idea |
+
+**They are declared here, not moved.** Relocating them would change where the
+loader reads them for no gain; the defect was that they were invisible, not that
+they were in the wrong file.
+
+**Note the interaction, because Layer 6 will meet it.** Inside a code block,
+keywords are already `state_a`. If a topic binds `state_a` to something and
+applies it to a code block's border, the result is amber keywords in an
+amber-bordered box. Text and border are different visual categories, so a viewer
+is unlikely to confuse them — but that judgement belongs to whoever writes the
+binding table, and today nothing would surface it.
 
 ## 5 · Theme-specific text tokens
 
@@ -215,7 +280,7 @@ a glance.
 | Token | Value |
 |---|---|
 | `code_block.background` | `rgba(255,255,255,0.04)` |
-| `code_block.border_left` | 3px solid `state_b` |
+| `code_block.border_left` | 3px solid `state_b` — **a binding, see §4a** |
 | `code_block.padding` | 20px 24px |
 | `code_block.radius` | 3px |
 
@@ -363,6 +428,8 @@ Durations are starting values — tune after slide 1 (Layer 7 feedback).
 | 4 | Grid | **Adopted** — 12 × 118px columns, 8 × 90px rows, 24px gutters. Replaces the fixed 2-column split. |
 | 5 | Slide transition | **Deferred** — keep simple; revisit after slide 1. Values stay `null`. |
 | 6 | Full-screen legibility | **Verified.** Confirmed on a real 1080p display; 25px and 20px styles read acceptably. |
+| 7 | Who binds a meaning to a slot | **Layer 6, at project level.** This document defines slots only. The binding is one-way (same meaning → same slot, every video), many-to-one (meanings may share a slot), and checkable (two meanings may share unless a viewer must tell them apart). See §4 and §4a. Closes OBS-005 |
+| 8 | Payload version string | **Corrected.** The JSON payload read `"version": "v1"` through document versions v2 and v3 — the bump was simply missed. Document and payload were otherwise byte-identical, so nothing had drifted. Both now read v4. Closes OBS-006 |
 
 ### Reference specimen
 
@@ -404,28 +471,46 @@ container — it removes a network dependency from the render path.
 {
   "schema_version": "1.0.0",
   "artifact_type": "global_style_contract",
-  "generated_at": null,
+  "generated_at": "2026-08-16T00:00:00Z",
   "source": "layer_1_manual",
   "payload": {
-    "version": "v1",
+    "version": "v4",
     "theme_selected": null,
     "canvas": {
-      "width": 1920, "height": 1080, "fps": 30,
-      "safe_margin": {"top": 96, "right": 120, "bottom": 52, "left": 120},
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "safe_margin": {
+        "top": 96,
+        "right": 120,
+        "bottom": 52,
+        "left": 120
+      },
       "spacing_base_unit_px": 4,
       "grid": {
-        "columns": 12, "column_width_px": 118,
-        "rows": 8, "row_height_px": 90,
+        "columns": 12,
+        "column_width_px": 118,
+        "rows": 8,
+        "row_height_px": 90,
         "gutter_px": 24,
-        "content_area": {"width": 1680, "height": 888},
+        "content_area": {
+          "width": 1680,
+          "height": 888
+        },
         "col_origin_fn": "120 + (n-1)*142",
         "row_origin_fn": "96 + (n-1)*114",
         "span_fn": "k*118 + (k-1)*24",
         "note": "invisible coordinate system — Layer 3 selects cells, does not invent pixel positions"
       },
-      "satisfies": ["TGT-001", "TGT-002"]
+      "satisfies": [
+        "TGT-001",
+        "TGT-002"
+      ]
     },
-    "type_scale": {"base_px": 31, "ratio": 1.25},
+    "type_scale": {
+      "base_px": 31,
+      "ratio": 1.25
+    },
     "themes": {
       "navy": {
         "background": {
@@ -479,40 +564,187 @@ container — it removes a network dependency from the render path.
       "focus_attention": "#FFD84D",
       "warning_error": "#FF6B6B",
       "channels": {
-        "state_a": {"colour": "#F2A33C", "redundant": "line_style:dashed"},
-        "state_b": {"colour": "#3FD0C9", "redundant": "line_style:solid"},
-        "state_c": {"colour": "#B79CF5", "redundant": "line_style:dotted"},
-        "focus_attention": {"colour": "#FFD84D", "primary_channel": "glow_or_scale_pulse"},
-        "warning_error": {"colour": "#FF6B6B", "primary_channel": "icon_or_shape_change"}
+        "state_a": {
+          "colour": "#F2A33C",
+          "redundant": "line_style:dashed"
+        },
+        "state_b": {
+          "colour": "#3FD0C9",
+          "redundant": "line_style:solid"
+        },
+        "state_c": {
+          "colour": "#B79CF5",
+          "redundant": "line_style:dotted"
+        },
+        "focus_attention": {
+          "colour": "#FFD84D",
+          "primary_channel": "glow_or_scale_pulse"
+        },
+        "warning_error": {
+          "colour": "#FF6B6B",
+          "primary_channel": "icon_or_shape_change"
+        }
       },
       "rule": "colour never carries meaning alone — every semantic distinction has a non-colour channel",
       "note": "roles are NOT bound to entities here — Layer 4 binds them",
       "collision_warning": "state_a and warning_error are identical under deuteranopia (1.01:1); separation relies on the shape/icon channel"
     },
     "type_styles": {
-      "eyebrow":      {"family": "Space Grotesk", "weight": 500, "step": -2, "size_px": 20, "tracking": "0.1em", "transform": "uppercase"},
-      "h1":           {"family": "Space Grotesk", "weight": 600, "step": 3,  "size_px": 60, "line_height": 1.15},
-      "h2":           {"family": "Space Grotesk", "weight": 600, "step": 2,  "size_px": 48, "line_height": 1.20},
-      "h3":           {"family": "Space Grotesk", "weight": 500, "step": 1,  "size_px": 39, "line_height": 1.25},
-      "body":         {"family": "Inter", "weight": 400, "step": 0,  "size_px": 31, "line_height": 1.50},
-      "body_emphasis":{"family": "Inter", "weight": 500, "step": 0,  "size_px": 31, "line_height": 1.50},
-      "caption":      {"family": "Inter", "weight": 400, "step": -1, "size_px": 25, "line_height": 1.40},
-      "label":        {"family": "Inter", "weight": 500, "step": -1, "size_px": 25},
-      "code":         {"family": "Space Mono", "weight": 400, "step": -1, "size_px": 25, "line_height": 1.45},
-      "code_keyword": {"family": "Space Mono", "weight": 400, "step": -1, "size_px": 25, "colour_role": "state_a"},
-      "code_comment": {"family": "Space Mono", "weight": 400, "step": -1, "size_px": 25, "colour_role": "eyebrow"},
-      "math":         {"family": "Source Serif 4", "fallback": "Georgia, serif", "weight": 400, "step": 0, "size_px": 31, "line_height": 1.40},
-      "math_variable":{"family": "Source Serif 4", "weight": 400, "style": "italic", "step": 0, "size_px": 31},
-      "math_subscript":{"family": "Source Serif 4", "weight": 400, "style": "italic", "size_em": 0.62, "vertical_align_em": -0.25},
-      "table_header": {"family": "Space Mono", "weight": 700, "step": -1, "size_px": 25},
-      "table_cell":   {"family": "Space Mono", "weight": 400, "step": -1, "size_px": 25},
-      "panel_label":  {"family": "Space Grotesk", "weight": 500, "step": -2, "size_px": 20, "tracking": "0.08em", "transform": "uppercase"},
-      "footer_text":  {"family": "Space Grotesk", "weight": 400, "step": -2, "size_px": 20}
+      "eyebrow": {
+        "family": "Space Grotesk",
+        "weight": 500,
+        "step": -2,
+        "size_px": 20,
+        "tracking": "0.1em",
+        "transform": "uppercase"
+      },
+      "h1": {
+        "family": "Space Grotesk",
+        "weight": 600,
+        "step": 3,
+        "size_px": 60,
+        "line_height": 1.15
+      },
+      "h2": {
+        "family": "Space Grotesk",
+        "weight": 600,
+        "step": 2,
+        "size_px": 48,
+        "line_height": 1.2
+      },
+      "h3": {
+        "family": "Space Grotesk",
+        "weight": 500,
+        "step": 1,
+        "size_px": 39,
+        "line_height": 1.25
+      },
+      "body": {
+        "family": "Inter",
+        "weight": 400,
+        "step": 0,
+        "size_px": 31,
+        "line_height": 1.5
+      },
+      "body_emphasis": {
+        "family": "Inter",
+        "weight": 500,
+        "step": 0,
+        "size_px": 31,
+        "line_height": 1.5
+      },
+      "caption": {
+        "family": "Inter",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "line_height": 1.4
+      },
+      "label": {
+        "family": "Inter",
+        "weight": 500,
+        "step": -1,
+        "size_px": 25
+      },
+      "code": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "line_height": 1.45
+      },
+      "code_keyword": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "colour_role": "state_a"
+      },
+      "code_comment": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25,
+        "colour_role": "eyebrow"
+      },
+      "math": {
+        "family": "Source Serif 4",
+        "fallback": "Georgia, serif",
+        "weight": 400,
+        "step": 0,
+        "size_px": 31,
+        "line_height": 1.4
+      },
+      "math_variable": {
+        "family": "Source Serif 4",
+        "weight": 400,
+        "style": "italic",
+        "step": 0,
+        "size_px": 31
+      },
+      "math_subscript": {
+        "family": "Source Serif 4",
+        "weight": 400,
+        "style": "italic",
+        "size_em": 0.62,
+        "vertical_align_em": -0.25
+      },
+      "table_header": {
+        "family": "Space Mono",
+        "weight": 700,
+        "step": -1,
+        "size_px": 25
+      },
+      "table_cell": {
+        "family": "Space Mono",
+        "weight": 400,
+        "step": -1,
+        "size_px": 25
+      },
+      "panel_label": {
+        "family": "Space Grotesk",
+        "weight": 500,
+        "step": -2,
+        "size_px": 20,
+        "tracking": "0.08em",
+        "transform": "uppercase"
+      },
+      "footer_text": {
+        "family": "Space Grotesk",
+        "weight": 400,
+        "step": -2,
+        "size_px": 20
+      }
     },
     "lists": {
-      "level_1": {"marker": "filled_circle", "size_px": 12, "indent_px": 0,  "gap_px": 34, "text_style": "body",    "vertical_gap_px": 20},
-      "level_2": {"marker": "hollow_circle", "size_px": 10, "stroke_px": 2, "indent_px": 44, "gap_px": 34, "text_style": "body", "vertical_gap_px": 20},
-      "level_3": {"marker": "dash", "size_px": [10, 2], "indent_px": 88, "gap_px": 34, "text_style": "caption", "vertical_gap_px": 20}
+      "level_1": {
+        "marker": "filled_circle",
+        "size_px": 12,
+        "indent_px": 0,
+        "gap_px": 34,
+        "text_style": "body",
+        "vertical_gap_px": 20
+      },
+      "level_2": {
+        "marker": "hollow_circle",
+        "size_px": 10,
+        "stroke_px": 2,
+        "indent_px": 44,
+        "gap_px": 34,
+        "text_style": "body",
+        "vertical_gap_px": 20
+      },
+      "level_3": {
+        "marker": "dash",
+        "size_px": [
+          10,
+          2
+        ],
+        "indent_px": 88,
+        "gap_px": 34,
+        "text_style": "caption",
+        "vertical_gap_px": 20
+      }
     },
     "table": {
       "border": "1px solid rgba(255,255,255,0.15)",
@@ -534,40 +766,126 @@ container — it removes a network dependency from the render path.
       "baseline_px": 52,
       "rule": "1px solid rgba(255,255,255,0.12)",
       "rule_offset_px": 22,
-      "slots": ["attribution", "slide_number"],
+      "slots": [
+        "attribution",
+        "slide_number"
+      ],
       "colour": "rgba(255,255,255,0.55)"
     },
     "animation_defaults": {
-      "reveal": {"duration_s": 0.3, "easing": "ease-out", "stagger_s": 0.12,
-                 "variants": ["fade_in", "draw_on", "consume_text_to_diagram"]},
-      "state_motion": {"duration_s": 1.1, "variants": ["token_travel"],
-                       "usage_rule": "teach a mechanic only — never decorative",
-                       "satisfies": ["VGR-04"]},
-      "camera": {"duration_s": 0.8, "easing": "ease-in-out",
-                 "variants": ["zoom_to_focus", "pan_between_regions", "pull_back_summary"],
-                 "rules": ["camera follows the narration subject",
-                           "never move camera and reveal a new element simultaneously"],
-                 "satisfies": ["VGR-03"]},
-      "layering": {"rule": "dimensions compose on one element, not either/or",
-                   "satisfies": ["VGR-02"]},
-      "slide_transition": {"type": null, "duration_s": null}
+      "reveal": {
+        "duration_s": 0.3,
+        "easing": "ease-out",
+        "stagger_s": 0.12,
+        "variants": [
+          "fade_in",
+          "draw_on",
+          "consume_text_to_diagram"
+        ]
+      },
+      "state_motion": {
+        "duration_s": 1.1,
+        "variants": [
+          "token_travel"
+        ],
+        "usage_rule": "teach a mechanic only — never decorative",
+        "satisfies": [
+          "VGR-04"
+        ]
+      },
+      "camera": {
+        "duration_s": 0.8,
+        "easing": "ease-in-out",
+        "variants": [
+          "zoom_to_focus",
+          "pan_between_regions",
+          "pull_back_summary"
+        ],
+        "rules": [
+          "camera follows the narration subject",
+          "never move camera and reveal a new element simultaneously"
+        ],
+        "satisfies": [
+          "VGR-03"
+        ]
+      },
+      "layering": {
+        "rule": "dimensions compose on one element, not either/or",
+        "satisfies": [
+          "VGR-02"
+        ]
+      },
+      "slide_transition": {
+        "type": null,
+        "duration_s": null
+      }
     },
     "output_encode": {
       "video_codec": "h264_high",
-      "video_bitrate_mbps": [8, 12],
+      "video_bitrate_mbps": [
+        8,
+        12
+      ],
       "audio_codec": "aac",
       "audio_channels": 2,
       "audio_sample_rate": 48000,
-      "audio_bitrate_kbps": [192, 256],
-      "satisfies": ["TGT-003", "TGT-004", "TGT-005", "TGT-006", "TGT-007", "TGT-008"]
+      "audio_bitrate_kbps": [
+        192,
+        256
+      ],
+      "satisfies": [
+        "TGT-003",
+        "TGT-004",
+        "TGT-005",
+        "TGT-006",
+        "TGT-007",
+        "TGT-008"
+      ]
     },
-    "required_fonts": ["Space Grotesk", "Inter", "Space Mono", "Source Serif 4"],
+    "required_fonts": [
+      "Space Grotesk",
+      "Inter",
+      "Space Mono",
+      "Source Serif 4"
+    ],
     "verification": {
       "contrast_measured": true,
       "colourblind_checked": true,
       "typography_legibility_verified_fullscreen": true
     },
-    "entity_grammar": "NOT DEFINED HERE — see Layer 4"
+    "entity_grammar": "NOT DEFINED HERE — Layer 6 (visual vocabulary) owns the meaning-to-slot binding. See payload.slot_binding. The previous value pointed at 'Layer 4' under the pre-renumber scheme and resolved to the transcript layer.",
+    "slot_binding": {
+      "rule_direction": "The same meaning takes the same slot in every video. The same slot MAY carry different meanings in different videos. One-way, on purpose.",
+      "rule_sharing": "Two meanings may share a slot unless a viewer would ever need to tell them apart. Sharing is expected, not exceptional — the slots are three distinguishable groups, not a budget of three ideas.",
+      "slots_are_unbound": [
+        "state_a",
+        "state_b",
+        "state_c"
+      ],
+      "slot_names_are_deliberately_empty": "state_a/b/c carry no meaning and must not be renamed to one. Naming a slot 'blocked_waiting' forces a rename across every artifact the day a topic needs that slot for something else.",
+      "owner": "layer_6_visual_vocabulary",
+      "owner_scope": "project-level, extended per topic, never contradicted. A meaning used by more than one topic (e.g. 'blocked') is decided once; per-topic files could otherwise disagree and break the one-way rule.",
+      "binding_table_requirement": "Layer 6 must list every meaning bound to each slot, so one reviewer pass can ask of each slot: could any two of these ever need distinguishing?",
+      "contract_bindings": [
+        {
+          "token": "type_styles.code_keyword.colour_role",
+          "slot": "state_a",
+          "reason": "a keyword is a keyword in every topic — typography, not subject matter"
+        },
+        {
+          "token": "type_styles.code_comment.colour_role",
+          "slot": "eyebrow",
+          "reason": "same reasoning; eyebrow is a text token, not one of the three slots"
+        },
+        {
+          "token": "code_block.border_left_role",
+          "slot": "state_b",
+          "reason": "the edge marks 'this is code' — a document-wide category, not a topic's idea"
+        }
+      ],
+      "contract_bindings_note": "Declared here, not relocated — the tokens stay where the loader reads them. The defect was that these bindings were invisible, not that they were in the wrong place.",
+      "known_interaction": "Code-block keywords are already state_a. A topic binding state_a and applying it to a code block's border yields amber keywords in an amber-bordered box. Different visual categories, so probably fine — but that call belongs to the binding table, and nothing surfaces it today."
+    }
   }
 }
 ```
@@ -575,6 +893,19 @@ container — it removes a network dependency from the render path.
 ---
 
 ## Changelog
+
+- **v4** — slots separated from meanings. §4 rewritten: `state_a/b/c` are slots and
+  carry no meaning; the binding is **Layer 6's**, one-way (same meaning → same slot
+  in every video), many-to-one, and checkable (two meanings may share a slot unless
+  a viewer must tell them apart); the binding is project-level and topic-extensible
+  so a meaning shared by several topics cannot drift. New §4a declares the three
+  bindings this contract itself makes — `code_keyword`, `code_comment`,
+  `code_block.border_left` — which were previously scattered and read as styling.
+  Payload `version` corrected v1 → v4: it had been missed through v2 and v3 while
+  document and payload stayed byte-identical, so nothing had actually drifted.
+  Three stale layer references repointed from the pre-renumber scheme — the title
+  (Layer 1 → Layer 2), §4's "is Layer 4", and `entity_grammar`'s "see Layer 4".
+  Closes OBS-005 and OBS-006.
 
 - **v3** — reference specimen `docs/shared/specimen/specimen-navy.html` built and verified
   with real fonts. `warning` hue reassignment attempted and rejected: an HSV

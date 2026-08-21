@@ -352,6 +352,48 @@ class Verification(_StrictModel):
     typography_legibility_verified_fullscreen: bool
 
 
+# ── Slot binding (contract v4) ──────────────────────────────────────────
+
+
+class ContractBinding(_StrictModel):
+    """One meaning this contract itself binds to a palette slot.
+
+    These exist because a keyword is a keyword in every topic — they are
+    typography, not subject matter. They are declared rather than relocated:
+    the tokens stay where the loader already reads them, and this list only
+    makes them visible to Layer 6, which owns every other binding.
+    """
+
+    token: str
+    slot: str
+    reason: str
+
+
+class SlotBinding(_StrictModel):
+    """How a meaning gets attached to a palette slot — and who may do it.
+
+    The contract defines slots (`state_a/b/c`): colours verified to be
+    distinguishable, each with a redundant non-colour channel. A slot carries
+    no meaning. Layer 6 binds meanings to slots; this block records the rules
+    that binding must obey, so the constraint travels with the contract instead
+    of living in someone's memory.
+
+    Optional so that a pre-v4 contract still validates — the field was added,
+    not changed, which is why `schema_version` does not move (ADR-005).
+    """
+
+    rule_direction: str
+    rule_sharing: str
+    slots_are_unbound: list[str]
+    slot_names_are_deliberately_empty: str
+    owner: str
+    owner_scope: str
+    binding_table_requirement: str
+    contract_bindings: list[ContractBinding]
+    contract_bindings_note: str
+    known_interaction: str
+
+
 # ── Payload + top-level envelope ────────────────────────────────────────
 
 
@@ -371,7 +413,8 @@ class StyleContractPayload(_StrictModel):
     output_encode: OutputEncode
     required_fonts: list[str]
     verification: Verification
-    entity_grammar: str  # placeholder text today — Layer 4 owns this, per ADR-007 §8
+    entity_grammar: str  # pointer text only — Layer 6 owns the binding; see slot_binding
+    slot_binding: SlotBinding | None = None  # contract v4+; absent on v1-v3 files
 
 
 class StyleContract(_StrictModel):

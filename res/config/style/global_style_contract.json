@@ -4,7 +4,7 @@
   "generated_at": "2026-08-16T00:00:00Z",
   "source": "layer_1_manual",
   "payload": {
-    "version": "v1",
+    "version": "v4",
     "theme_selected": null,
     "canvas": {
       "width": 1920,
@@ -383,6 +383,38 @@
       "colourblind_checked": true,
       "typography_legibility_verified_fullscreen": true
     },
-    "entity_grammar": "NOT DEFINED HERE — see Layer 4"
+    "entity_grammar": "NOT DEFINED HERE — Layer 6 (visual vocabulary) owns the meaning-to-slot binding. See payload.slot_binding. The previous value pointed at 'Layer 4' under the pre-renumber scheme and resolved to the transcript layer.",
+    "slot_binding": {
+      "rule_direction": "The same meaning takes the same slot in every video. The same slot MAY carry different meanings in different videos. One-way, on purpose.",
+      "rule_sharing": "Two meanings may share a slot unless a viewer would ever need to tell them apart. Sharing is expected, not exceptional — the slots are three distinguishable groups, not a budget of three ideas.",
+      "slots_are_unbound": [
+        "state_a",
+        "state_b",
+        "state_c"
+      ],
+      "slot_names_are_deliberately_empty": "state_a/b/c carry no meaning and must not be renamed to one. Naming a slot 'blocked_waiting' forces a rename across every artifact the day a topic needs that slot for something else.",
+      "owner": "layer_6_visual_vocabulary",
+      "owner_scope": "project-level, extended per topic, never contradicted. A meaning used by more than one topic (e.g. 'blocked') is decided once; per-topic files could otherwise disagree and break the one-way rule.",
+      "binding_table_requirement": "Layer 6 must list every meaning bound to each slot, so one reviewer pass can ask of each slot: could any two of these ever need distinguishing?",
+      "contract_bindings": [
+        {
+          "token": "type_styles.code_keyword.colour_role",
+          "slot": "state_a",
+          "reason": "a keyword is a keyword in every topic — typography, not subject matter"
+        },
+        {
+          "token": "type_styles.code_comment.colour_role",
+          "slot": "eyebrow",
+          "reason": "same reasoning; eyebrow is a text token, not one of the three slots"
+        },
+        {
+          "token": "code_block.border_left_role",
+          "slot": "state_b",
+          "reason": "the edge marks 'this is code' — a document-wide category, not a topic's idea"
+        }
+      ],
+      "contract_bindings_note": "Declared here, not relocated — the tokens stay where the loader reads them. The defect was that these bindings were invisible, not that they were in the wrong place.",
+      "known_interaction": "Code-block keywords are already state_a. A topic binding state_a and applying it to a code block's border yields amber keywords in an amber-bordered box. Different visual categories, so probably fine — but that call belongs to the binding table, and nothing surfaces it today."
+    }
   }
 }
