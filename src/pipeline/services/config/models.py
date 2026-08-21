@@ -265,6 +265,79 @@ class CodeBlock(_StrictModel):
     radius_px: int
 
 
+class PlatePadding(_StrictModel):
+    vertical: float
+    horizontal: float
+
+
+class BrandPlate(_StrictModel):
+    """The light ground the mark sits on.
+
+    Required because the supplied mark cannot be read on any of the three
+    theme backgrounds — see BrandMark.why_a_plate_at_all for the measured
+    figures. Padding is expressed as a percentage of frame width so the plate
+    scales with the canvas rather than being pinned to 1080p.
+    """
+
+    fill: str
+    radius_px: int
+    padding_pct_of_frame_width: PlatePadding
+    padding_note: str
+
+
+class BrandMarkMeasured(_StrictModel):
+    """Contrast figures taken from the supplied asset, not estimated.
+
+    Kept in the contract rather than in a design note because they are the
+    evidence for the plate existing at all. If the asset is replaced, these
+    must be re-measured, and a stale set here is easier to catch than a
+    forgotten paragraph elsewhere.
+    """
+
+    wordmark_colour: str
+    supplied_ground: str
+    wordmark_on_own_ground: float
+    wordmark_on_navy: float
+    wordmark_on_blue: float
+    wordmark_on_green: float
+    plate_on_navy: float
+    plate_on_blue: float
+    plate_on_green: float
+
+
+class BrandMarkAlternative(_StrictModel):
+    asset: str
+    use: str
+
+
+class BrandMark(_StrictModel):
+    """The institute mark, carried in the footer of every slide.
+
+    Sized from frame width rather than pixels, and the plate sizes itself from
+    the mark's aspect ratio — so swapping the asset for one of different
+    proportions needs no change to this block beyond aspect_ratio.
+    """
+
+    src: str
+    src_note: str
+    aspect_ratio: float
+    aspect_note: str
+    height_pct_of_frame_width: float
+    height_px_at_1080p: int
+    plate: BrandPlate
+    position: str
+    why_a_plate_at_all: str
+    measured: BrandMarkMeasured
+    alternatives_kept: list[BrandMarkAlternative]
+    provenance_warning: str
+
+
+class FooterAttribution(_StrictModel):
+    text: str
+    position: str
+    colour_note: str
+
+
 class Footer(_StrictModel):
     layout: str
     baseline_px: int
@@ -272,6 +345,11 @@ class Footer(_StrictModel):
     rule_offset_px: int
     slots: list[str]
     colour: str
+    # v5+. Optional so a pre-v5 contract — whose footer carried a slide_number
+    # slot and no mark — still validates without a migration.
+    attribution: FooterAttribution | None = None
+    brand_mark: BrandMark | None = None
+    slide_number_removed: str | None = None
 
 
 # ── Animation defaults ───────────────────────────────────────────────────

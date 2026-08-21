@@ -291,10 +291,74 @@ a glance.
 | `footer.layout` | flex, space-between, full content width |
 | `footer.baseline` | 52px from bottom |
 | `footer.rule` | 1px `rgba(255,255,255,0.12)`, 22px above baseline |
-| `footer.slots` | `["attribution", "slide_number"]` |
-| `footer.contrast` | 5.12–5.58:1 depending on theme |
+| `footer.slots` | **`["attribution", "brand_mark"]`** |
+| `footer.contrast` | 5.58 / 5.12 / 5.30:1 on navy / blue / green |
 
 Raised from the original 42% opacity (3.84:1, below AA) to 55%.
+
+**Attribution** sits left: `@Ravi Subramanian`, in `footer.colour`.
+
+**The slide number was removed (v5).** Slide numbers exist for navigation, and a
+video has none — a viewer cannot turn to slide 4. The token occupied a place on
+every frame of every video and bought nothing.
+
+This removes the number from the **screen only**. `slide_id` remains in every
+internal artifact and is how Layer 8 binds a beat to an element; nothing
+downstream is affected.
+
+### Brand mark
+
+Sits **right**, opposite the attribution. Specimen:
+`docs/shared/specimen/footer-themes.html`, rendered on all three themes.
+
+| Token | Value |
+|---|---|
+| `brand_mark.src` | `res/library/icons/eklakshya-alpha.png` |
+| `brand_mark.aspect_ratio` | 3.03 : 1 (497 × 164 after trimming) |
+| `brand_mark.height` | **2.05% of frame width** ≈ 39px at 1080p |
+| `brand_mark.plate.fill` | `#FFFFFF` |
+| `brand_mark.plate.radius` | 4px |
+| `brand_mark.plate.padding` | 0.5% × 0.8% of frame width |
+
+Height and padding are expressed as a share of frame width, not pixels, so the
+mark scales with the canvas. The plate sizes itself from the mark, so replacing
+the asset with one of different proportions changes `aspect_ratio` and nothing
+else.
+
+#### Why a plate is required — measured, not assumed
+
+| | on its own ground | navy `#16234A` | blue `#0B2E5C` | green `#26301C` |
+|---|---|---|---|---|
+| wordmark `#000327` | **18.81** | **1.32** | **1.50** | **1.46** |
+| white plate | — | 15.29 | 13.47 | 13.80 |
+
+The supplied mark is a dark wordmark. At 1.32:1 it is not merely hard to read on
+navy — it is **invisible**. Every other token in this contract carries a measured
+contrast figure; shipping the mark bare would have made it the one unmeasured
+thing on screen.
+
+The supplied asset's own ground is **`#F7F7F7`, not pure white**. Laid on a
+pure-white plate it would show a 1.07:1 step at the image edge — faint on a
+laptop, visible on a projector. `eklakshya-alpha.png` carries no ground at all,
+which is why it is the asset named here.
+
+#### Two alternatives, kept deliberately
+
+| Asset | Use |
+|---|---|
+| `eklakshya-trim.png` | when the plate is `#F7F7F7` — the asset keeps its own ground |
+| `eklakshya-knockout.png` | **no plate at all**; the mark sits directly on the slide. Preferred long-term |
+
+#### Provenance, and its limit
+
+`-alpha` and `-knockout` are **derived by threshold from a JPEG**. A script
+decided which pixels were ground and which were wordmark. That is a computation
+standing in for a judgement, and on a logo it is the kind of approximation a
+brand owner notices before anyone else does.
+
+**A vector original (`.ai`, `.eps`, `.svg`) or an official white-on-dark variant
+replaces both.** Until one exists, do not use the derived files for anything
+printed or client-facing without a look from whoever owns the brand.
 
 ---
 
@@ -429,6 +493,7 @@ Durations are starting values — tune after slide 1 (Layer 7 feedback).
 | 5 | Slide transition | **Deferred** — keep simple; revisit after slide 1. Values stay `null`. |
 | 6 | Full-screen legibility | **Verified.** Confirmed on a real 1080p display; 25px and 20px styles read acceptably. |
 | 7 | Who binds a meaning to a slot | **Layer 6, at project level.** This document defines slots only. The binding is one-way (same meaning → same slot, every video), many-to-one (meanings may share a slot), and checkable (two meanings may share unless a viewer must tell them apart). See §4 and §4a. Closes OBS-005 |
+| 9 | Footer contents | **Attribution left, brand mark right, no slide number.** A video has no navigation, so a slide number is dead weight on every frame. The mark needs a plate: its wordmark measures 1.32:1 on navy. See §7. |
 | 8 | Payload version string | **Corrected.** The JSON payload read `"version": "v1"` through document versions v2 and v3 — the bump was simply missed. Document and payload were otherwise byte-identical, so nothing had drifted. Both now read v4. Closes OBS-006 |
 
 ### Reference specimen
@@ -474,7 +539,7 @@ container — it removes a network dependency from the render path.
   "generated_at": "2026-08-16T00:00:00Z",
   "source": "layer_1_manual",
   "payload": {
-    "version": "v4",
+    "version": "v5",
     "theme_selected": null,
     "canvas": {
       "width": 1920,
@@ -768,9 +833,56 @@ container — it removes a network dependency from the render path.
       "rule_offset_px": 22,
       "slots": [
         "attribution",
-        "slide_number"
+        "brand_mark"
       ],
-      "colour": "rgba(255,255,255,0.55)"
+      "colour": "rgba(255,255,255,0.55)",
+      "attribution": {
+        "text": "@Ravi Subramanian",
+        "position": "footer left, inside the safe margin",
+        "colour_note": "uses footer.colour — rgba(255,255,255,0.55), measured 5.58 / 5.12 / 5.30:1 on navy / blue / green"
+      },
+      "brand_mark": {
+        "src": "res/library/icons/eklakshya-alpha.png",
+        "src_note": "The keyed variant, carrying no ground of its own. The supplied JPEG's ground is #F7F7F7, so laying it on a pure-white plate would show a 1.07:1 seam at the image edge — faint on a laptop, visible on a projector.",
+        "aspect_ratio": 3.03,
+        "aspect_note": "497x164 after trimming to content. The plate sizes itself from the mark, so replacing the asset with a different aspect needs no change here.",
+        "height_pct_of_frame_width": 2.05,
+        "height_px_at_1080p": 39,
+        "plate": {
+          "fill": "#FFFFFF",
+          "radius_px": 4,
+          "padding_pct_of_frame_width": {
+            "vertical": 0.5,
+            "horizontal": 0.8
+          },
+          "padding_note": "White must never touch the artwork, or the plate reads as a crop rather than a ground."
+        },
+        "position": "footer right, inside the safe margin",
+        "why_a_plate_at_all": "MEASURED from the supplied asset: the wordmark is #000327 and scores 1.32:1 on navy #16234A, 1.50:1 on blue #0B2E5C and 1.46:1 on green #26301C. It is invisible on all three. On its own ground it scores 18.81:1. The mark therefore cannot sit bare on a dark slide in its supplied form — it needs either a light plate or a knockout.",
+        "measured": {
+          "wordmark_colour": "#000327",
+          "supplied_ground": "#F7F7F7",
+          "wordmark_on_own_ground": 18.81,
+          "wordmark_on_navy": 1.32,
+          "wordmark_on_blue": 1.5,
+          "wordmark_on_green": 1.46,
+          "plate_on_navy": 15.29,
+          "plate_on_blue": 13.47,
+          "plate_on_green": 13.8
+        },
+        "alternatives_kept": [
+          {
+            "asset": "res/library/icons/eklakshya-trim.png",
+            "use": "when the plate is #F7F7F7 rather than white — the asset keeps its own ground"
+          },
+          {
+            "asset": "res/library/icons/eklakshya-knockout.png",
+            "use": "no plate at all; the mark sits directly on the slide. Preferred long-term"
+          }
+        ],
+        "provenance_warning": "-alpha and -knockout are DERIVED BY THRESHOLD FROM A JPEG. A script decided which pixels were ground and which were wordmark; that is a computation standing in for a judgement. A vector original or an official white-on-dark variant replaces both."
+      },
+      "slide_number_removed": "Slide numbers exist for navigation and a video has none — a viewer cannot turn to slide 4. The token cost a place on every frame and bought nothing. This removes the number from the SCREEN only: slide_id remains in every internal artifact and is how Layer 8 binds beats."
     },
     "animation_defaults": {
       "reveal": {
@@ -893,6 +1005,22 @@ container — it removes a network dependency from the render path.
 ---
 
 ## Changelog
+
+- **v5** — footer carries the institute mark. `footer.slots` becomes
+  `["attribution", "brand_mark"]`: the slide number is removed because a video
+  has no navigation, so the number occupied a place on every frame and bought
+  nothing — `slide_id` is untouched in every internal artifact. The mark needs a
+  light ground: measured against the supplied JPEG, the wordmark `#000327`
+  scores **1.32:1 on navy**, 1.50 on blue, 1.46 on green, and 18.81 on its own
+  ground. The supplied ground is `#F7F7F7`, so a pure-white plate would show a
+  1.07:1 seam at the image edge — hence `eklakshya-alpha.png`, keyed to carry no
+  ground. Height and padding are shares of frame width, not pixels. Two
+  alternatives kept: `-trim` for an `#F7F7F7` plate, `-knockout` for no plate at
+  all. Both derived variants are **threshold-derived from a JPEG** and are
+  superseded the moment a vector original appears. `models.py` gains BrandMark,
+  BrandPlate, BrandMarkMeasured and FooterAttribution, all optional on Footer so
+  a v4 contract still validates without a migration. Specimen:
+  `docs/shared/specimen/footer-themes.html`.
 
 - **v4** — slots separated from meanings. §4 rewritten: `state_a/b/c` are slots and
   carry no meaning; the binding is **Layer 6's**, one-way (same meaning → same slot
