@@ -215,7 +215,7 @@ or added as the work reveals complexity.
 | 1 | Target spec | What the output must be | Project | `1-target-spec.md` | v1 | done |
 | 2 | Global theme | Background, palette roles, typography, animation defaults | Once, all 5 | `2-global-theme.md` | v2 | done |
 | 3 | Asset deconstruction | What is in each deck | **Per deck** | `3-asset-deconstruction.md` | v4 | verified on 1 slide |
-| 4 | Transcript + timing | What is said, when | Per video | — | planned | — |
+| 4 | Narration timeline | What is said, and exactly when | Per video | `4-narration-timeline.md` | v1 | not run |
 | 5 | Slide representation | Semantic identity; layout | Per slide | — | planned | — |
 | 6 | Visual vocabulary | What each semantic type looks like | Per topic | — | planned | — |
 | 7 | Audio mastering | Delivered sound quality | Per video | — | planned | — |
@@ -256,8 +256,9 @@ Deterministic work belongs in a tool; judgement belongs in a prompt. `mpk`
 
 ```
 mpk --help                 every group and command has -h
-mpk deck   info | extract | normalize | merge | render
-mpk review build
+mpk deck       info | extract | normalize | merge | render
+mpk transcript build | export | check
+mpk review     build | templates
 mpk audio  extract | asr | probe
 mpk video  probe | uniquefps
 mpk check  manifest
@@ -268,6 +269,8 @@ mpk check  manifest
 | `deck extract` | Layer 3 step 1 — OOXML shape tree, `lines[]`, connector endpoints, `id_coverage` |
 | `deck normalize` / `merge` | Repairing a deck before extraction — e.g. a slide reconstructed at the wrong canvas size |
 | `review build` | Layer 3 step 3A — injects the manifest into `tools/templates/slide-review.html` |
+| `transcript build` | Layer 4 step 2 — transcribe + force-align, word timings mandatory (DEC-001), vocabulary bias for notation |
+| `transcript export` | Layer 4 step 4A — `json` / `html` (audio embedded, click-a-word to play) / `vtt` / `txt` |
 | `audio extract` / `asr` | The RC-003 two-path split: 48 kHz stereo master, 16 kHz mono for alignment |
 | `audio probe` | Layer 7's input measurements |
 | `video uniquefps` | **TGT-013** — unique frames per second, which TGT-002 cannot detect |

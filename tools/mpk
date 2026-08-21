@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# mpk — thin launcher so the tool works without installing anything.
+#   ./tools/mpk --help
+# For a bare `mpk` from anywhere, either add tools/ to PATH:
+#   export PATH="$PATH:/path/to/media-pipeline/tools"
+# or alias it:
+#   alias mpk='python3 /path/to/media-pipeline/tools/mpk.py'
+exec python3 "$(dirname "$(readlink -f "$0")")/mpk.py" "$@"
