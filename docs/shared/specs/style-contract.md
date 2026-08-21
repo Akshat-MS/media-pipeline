@@ -296,7 +296,12 @@ a glance.
 
 Raised from the original 42% opacity (3.84:1, below AA) to 55%.
 
-**Attribution** sits left: `@Ravi Subramanian`, in `footer.colour`.
+**Attribution** sits left: `©Ravi Subramanian`, in `footer.colour`.
+
+**© is the copyright sign, not `@`.** Measured from the source video, where
+`©Ravi Subramanian` appears bottom-left on every frame, including over the intro
+and outro cards. Contract v5 read `@Ravi Subramanian`; `@` denotes a handle,
+`©` denotes authorship. The source was right and the draft was a mis-hearing.
 
 **The slide number was removed (v5).** Slide numbers exist for navigation, and a
 video has none — a viewer cannot turn to slide 4. The token occupied a place on
@@ -310,6 +315,11 @@ downstream is affected.
 
 Sits **right**, opposite the attribution. Specimen:
 `docs/shared/specimen/footer-themes.html`, rendered on all three themes.
+
+**A deliberate divergence from the source.** The original deck places the mark
+**centred** in the footer band. This contract places it **right**. That choice was
+made after reviewing the specimen full-screen, and is recorded so it reads as a
+decision rather than an oversight.
 
 | Token | Value |
 |---|---|
@@ -539,7 +549,7 @@ container — it removes a network dependency from the render path.
   "generated_at": "2026-08-16T00:00:00Z",
   "source": "layer_1_manual",
   "payload": {
-    "version": "v5",
+    "version": "v6",
     "theme_selected": null,
     "canvas": {
       "width": 1920,
@@ -837,9 +847,10 @@ container — it removes a network dependency from the render path.
       ],
       "colour": "rgba(255,255,255,0.55)",
       "attribution": {
-        "text": "@Ravi Subramanian",
+        "text": "©Ravi Subramanian",
         "position": "footer left, inside the safe margin",
-        "colour_note": "uses footer.colour — rgba(255,255,255,0.55), measured 5.58 / 5.12 / 5.30:1 on navy / blue / green"
+        "colour_note": "uses footer.colour — rgba(255,255,255,0.55), measured 5.58 / 5.12 / 5.30:1 on navy / blue / green",
+        "symbol_note": "© is the COPYRIGHT SIGN, not @. Measured from the source video, where '©Ravi Subramanian' sits bottom-left on every frame including the intro and outro cards. An earlier draft of this contract read '@Ravi Subramanian'; @ denotes a handle or account, © denotes authorship of the work. The source was always right and the draft was a mis-hearing."
       },
       "brand_mark": {
         "src": "res/library/icons/eklakshya-alpha.png",
@@ -880,7 +891,8 @@ container — it removes a network dependency from the render path.
             "use": "no plate at all; the mark sits directly on the slide. Preferred long-term"
           }
         ],
-        "provenance_warning": "-alpha and -knockout are DERIVED BY THRESHOLD FROM A JPEG. A script decided which pixels were ground and which were wordmark; that is a computation standing in for a judgement. A vector original or an official white-on-dark variant replaces both."
+        "provenance_warning": "-alpha and -knockout are DERIVED BY THRESHOLD FROM A JPEG. A script decided which pixels were ground and which were wordmark; that is a computation standing in for a judgement. A vector original or an official white-on-dark variant replaces both.",
+        "position_divergence": "The SOURCE deck places the mark centred in the footer band. This contract places it right, opposite the attribution. That is a deliberate change made after reviewing docs/shared/specimen/footer-themes.html, recorded here so the divergence is a decision rather than an oversight."
       },
       "slide_number_removed": "Slide numbers exist for navigation and a video has none — a viewer cannot turn to slide 4. The token cost a place on every frame and bought nothing. This removes the number from the SCREEN only: slide_id remains in every internal artifact and is how Layer 8 binds beats."
     },
@@ -1005,6 +1017,13 @@ container — it removes a network dependency from the render path.
 ---
 
 ## Changelog
+
+- **v6** — attribution corrected from `@Ravi Subramanian` to **`©Ravi Subramanian`**.
+  Measured from the source video, where the copyright notice sits bottom-left on
+  every frame. `@` denotes a handle; `©` denotes authorship of the work. Also
+  recorded: the source deck places the mark **centred** in the footer band while
+  this contract places it **right** — a deliberate change, now stated as one
+  (OBS-039).
 
 - **v5** — footer carries the institute mark. `footer.slots` becomes
   `["attribution", "brand_mark"]`: the slide number is removed because a video

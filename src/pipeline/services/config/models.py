@@ -330,12 +330,16 @@ class BrandMark(_StrictModel):
     measured: BrandMarkMeasured
     alternatives_kept: list[BrandMarkAlternative]
     provenance_warning: str
+    # v6+. Where this contract knowingly differs from the source deck.
+    position_divergence: str | None = None
 
 
 class FooterAttribution(_StrictModel):
     text: str
     position: str
     colour_note: str
+    # v6+. Optional so a v5 contract still validates.
+    symbol_note: str | None = None
 
 
 class Footer(_StrictModel):
