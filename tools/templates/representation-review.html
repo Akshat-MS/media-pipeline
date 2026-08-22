@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Representation review — what each element means</title>
+<style>
+:root{--bg:#0f1524;--pn:#151d31;--ln:#26314b;--tx:#e8edf7;--t2:#a8b6d2;--dm:#6a7898;
+--ok:#3FD0C9;--wn:#F2A33C;--bd:#FF6B6B;--pr:#7FB2F0;--vi:#B79CF5}
+*{box-sizing:border-box}
+body{margin:0;padding:22px 20px 90px;background:var(--bg);color:var(--tx);
+font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px;font-weight:650}
+.sub{color:var(--t2);font-size:13px;margin-bottom:16px}.sub b{color:var(--tx)}
+h3{font-size:12px;margin:30px 0 10px;color:var(--t2);text-transform:uppercase;
+letter-spacing:.08em;font-weight:600}
+.counts{display:flex;flex-wrap:wrap;gap:20px;padding:12px 16px;margin-bottom:14px;
+background:var(--pn);border:1px solid var(--ln);border-radius:8px;font-size:13px;color:var(--t2)}
+.counts b{color:var(--tx);font-size:16px;font-weight:650}
+.counts .ok b{color:var(--ok)}.counts .wn b{color:var(--wn)}.counts .bd b{color:var(--bd)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--pn);
+border:1px solid var(--ln);border-radius:8px;overflow:hidden}
+th,td{padding:9px 12px;border-bottom:1px solid var(--ln);text-align:left;vertical-align:top}
+th{color:var(--t2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+tr:last-child td{border-bottom:none}
+td.n{font-family:ui-monospace,Menlo,monospace;color:var(--dm);white-space:nowrap}
+td.id{font-family:ui-monospace,Menlo,monospace;color:var(--pr);white-space:nowrap}
+.pill{font-size:11px;letter-spacing:.06em;padding:2px 8px;border-radius:99px;
+font-weight:600;white-space:nowrap;display:inline-block}
+.pill.resolved{background:rgba(63,208,201,.15);color:var(--ok)}
+.pill.no_narration{background:rgba(106,120,152,.22);color:var(--dm)}
+.pill.unresolved{background:rgba(255,107,107,.15);color:var(--bd)}
+.pill.role{background:rgba(183,156,245,.16);color:var(--vi)}
+.pill.recap{background:rgba(242,163,60,.18);color:var(--wn)}
+.pill.exercise{background:rgba(127,178,240,.16);color:var(--pr)}
+.q{color:var(--t2);font-style:italic}
+.q b{color:var(--tx);font-style:normal;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.miss{color:var(--bd);font-weight:600}
+.arrow{color:var(--dm)}
+.bar{position:relative;height:10px;background:rgba(255,255,255,.06);border-radius:99px;min-width:120px}
+.bar i{position:absolute;top:0;bottom:0;border-radius:99px;opacity:.9;background:var(--vi)}
+.bar i.recap{background:var(--wn)}.bar i.exercise{background:var(--pr)}
+.bar i.title_card{background:var(--dm)}.bar i.walkthrough{background:var(--ok)}
+.line{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--t2);
+background:rgba(255,255,255,.03);border:1px solid var(--ln);border-radius:5px;
+padding:8px 11px;margin-top:10px;user-select:all}
+.note{font-size:13px;color:var(--t2);background:var(--pn);border:1px solid var(--ln);
+border-radius:8px;padding:12px 16px;margin-bottom:14px}.note b{color:var(--tx)}
+.note.bad{border-color:rgba(255,107,107,.4)}
+footer{margin-top:32px;color:var(--dm);font-size:11.5px;line-height:1.6}
+</style></head><body><div class="wrap" id="app"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     THE DATA. Replace the contents of this block and change nothing else.
+     The page renders whatever is here, so the two cannot disagree.
+     ══════════════════════════════════════════════════════════════════════ -->
+<script type="application/json" id="manifest">
+{"video_id":"REPLACE_ME","metadata":{},"elements":[],"focus_map":[],"entities":[]}
+</script>
+
+<script>
+const D = JSON.parse(document.getElementById('manifest').textContent);
+const M = D.metadata||{}, E = D.elements||[], FM = D.focus_map||[],
+      EN = D.entities||[], VA = D.vocabulary_additions||[], UN = D.unresolved||[];
+const e = s => s==null?'':String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mmss = s => s==null?'—':`${String(Math.floor(s/60)).padStart(2,'0')}:${(s%60).toFixed(2).padStart(5,'0')}`;
+
+const dur = FM.length ? Math.max(...FM.map(f=>f.end)) : 1;
+const nRes = E.filter(x=>x.status==='resolved').length;
+const nNo  = E.filter(x=>x.status==='no_narration').length;
+const nBad = E.filter(x=>x.status==='unresolved').length;
+// a resolved element with no citation is the failure this page exists to show
+const noCite = E.filter(x=>x.status==='resolved' &&
+  !(x.basis && x.basis.quote && x.basis.segment && x.basis.at!=null));
+// gaps and overlaps in the focus map
+const sorted = [...FM].sort((a,b)=>a.start-b.start);
+const holes = [];
+for (let i=1;i<sorted.length;i++){
+  const g = sorted[i].start - sorted[i-1].end;
+  if (Math.abs(g) > 0.05) holes.push({at:sorted[i-1].end, to:sorted[i].start, gap:g});
+}
+
+const elements = `<table><tr><th>element</th><th>slide</th><th>Layer 3 guessed</th>
+  <th>Layer 5 resolves</th><th>status</th><th>because he said</th></tr>` +
+  E.map(x=>{
+    const b = x.basis||{};
+    const cite = x.status==='resolved'
+      ? (b.quote ? `<span class="q">“${e(b.quote)}”</span> <b>${e(b.segment)} · ${mmss(b.at)}</b>`
+                 : `<span class="miss">NO CITATION — a resolution without evidence is a guess</span>`)
+      : `<span class="q">${e(b.note||b.quote||'—')}</span>`;
+    return `<tr><td class="id">${e(x.element_id)}</td><td class="n">${e(x.slide)}</td>
+      <td class="n">${e(x.prior_from_layer3||'—')}</td>
+      <td class="id">${e(x.semantic_type||'—')}</td>
+      <td><span class="pill ${e(x.status)}">${e(String(x.status).replace(/_/g,' '))}</span></td>
+      <td>${cite}</td></tr>`;
+  }).join('') + `</table>`;
+
+const focus = `<table><tr><th>window</th><th>slide</th><th>role</th><th>subject</th>
+  <th>because</th><th style="width:20%">timeline</th></tr>` +
+  sorted.map(f=>{
+    const subj = (f.subject&&f.subject.length)
+      ? f.subject.map(s=>`<span class="id">${e(s)}</span>`).join('<br>')
+      : `<span class="arrow">— nothing on screen —</span>`;
+    const lines = (f.lines&&f.lines.length)
+      ? `<div class="n">lines: ${f.lines.map(l=>`${e(l.element_id)}[${l.line_index}]`).join(', ')}</div>`
+      : '';
+    return `<tr>
+      <td class="n">${mmss(f.start)}<br>${mmss(f.end)}</td>
+      <td class="n">${e(f.slide||'—')}</td>
+      <td><span class="pill ${e(f.role)} role">${e(f.role)}</span></td>
+      <td>${subj}${lines}</td>
+      <td class="q">${e(f.basis||'')}</td>
+      <td><div class="bar"><i class="${e(f.role)}" style="left:${100*f.start/dur}%;
+        width:${Math.max(0.5,100*(f.end-f.start)/dur)}%"></i></div></td></tr>`;
+  }).join('') + `</table>`;
+
+const entities = EN.length ? `<table><tr><th>canonical</th><th>aliases</th>
+  <th>appears as</th><th>because</th></tr>` + EN.map(x=>`<tr>
+  <td class="id">${e(x.canonical)}</td>
+  <td class="n">${(x.aliases||[]).map(e).join(', ')}</td>
+  <td class="n">${(x.element_ids||[]).map(e).join('<br>')}</td>
+  <td class="q">${e(x.basis||'')}</td></tr>`).join('') + `</table>`
+  : `<div class="note">No entities merged. On a deck where two names denote one
+     thing — BUFSIZE and n on V017 — that is a miss, not a clean result.</div>`;
+
+document.getElementById('app').innerHTML = `
+<h1>${e(D.video_id)} — what each element means</h1>
+<div class="sub">Layer 5 · the first artifact that <b>decides</b> anything.
+ Layers 3 and 4 recorded facts; every value below is a judgement made from the
+ narration, and every one of them must cite the words it came from.</div>
+
+<div class="counts">
+ <span class="ok"><b>${nRes}</b> resolved</span>
+ <span><b>${nNo}</b> no narration</span>
+ <span class="${nBad?'bd':''}"><b>${nBad}</b> unresolved</span>
+ <span class="${noCite.length?'bd':''}"><b>${noCite.length}</b> missing citation</span>
+ <span><b>${FM.length}</b> focus windows</span>
+ <span class="${holes.length?'wn':''}"><b>${holes.length}</b> gaps/overlaps</span>
+ <span><b>${EN.length}</b> entities</span>
+ <span class="${VA.length?'wn':''}"><b>${VA.length}</b> vocabulary additions</span>
+</div>
+
+${noCite.length ? `<div class="note bad"><b>${noCite.length} resolved element(s) carry
+ no citation.</b> Every meaning must name the quote, the segment and the time it came
+ from. Without one there is no way to tell a reading from an invention:
+ ${noCite.map(x=>e(x.element_id)).join(', ')}</div>` : ''}
+
+${holes.length ? `<div class="note bad"><b>The focus map does not tile the video.</b>
+ ${holes.map(h=>`${h.gap>0?'gap':'overlap'} at ${mmss(h.at)} → ${mmss(h.to)}`).join(' · ')}.
+ Layer 8 needs every moment to belong to exactly one window — silence included.</div>` : ''}
+
+<h3>Elements — what each thing is</h3>
+${elements}
+
+<h3>Focus map — which element is the subject, when</h3>
+<div class="note"><b>Check the <span class="pill recap role">recap</span> windows
+hardest.</b> A recap means he is summarising what came before, so <b>nothing new may
+appear</b>. Mislabel one and Layer 8 sees narration with no matching visual and invents
+something. A window with <b>no subject</b> is also information — it tells Layer 8 to hold
+rather than hunt for something to animate.</div>
+${focus}
+
+<h3>Entities — which names are one thing</h3>
+${entities}
+
+${VA.length ? `<h3>Vocabulary additions</h3><table><tr><th>term</th>
+  <th>why no existing term fits</th></tr>` + VA.map(v=>`<tr>
+  <td class="id">${e(v.term)}</td><td class="q">${e(v.why_no_existing_term_fits)}</td>
+  </tr>`).join('') + `</table>` : ''}
+
+${UN.length ? `<h3>Unresolved</h3><table><tr><th>what</th><th>why</th><th>owner</th></tr>`
+  + UN.map(u=>`<tr><td>${e(u.what)}</td><td class="q">${e(u.why_unresolved)}</td>
+  <td class="n">${e(u.owner)}</td></tr>`).join('') + `</table>` : ''}
+
+<h3>How to record your verdicts</h3>
+<div class="note">Same three fields as the transcript and window reviews, so it is one
+habit and not three:
+<div class="line">01:55 | fix   | v017_s03_84 is dequeue, not enqueue</div>
+<div class="line">04:13 | check | is the producer block really the subject the whole time?</div>
+<div class="line">01:59 | ok    | BUFSIZE = n confirmed</div>
+<div class="line">all   | ok    | reviewed every element</div>
+Kinds: <b>fix</b>, <b>check</b>, <b>ok</b>, <b>ask</b>, <b>skim</b>. <b>skim</b> is not a
+lesser <b>ok</b> — one says you checked and were satisfied, the other says you never
+looked.</div>
+
+<footer>Rendered from the data embedded in this file, so the tables and the JSON cannot
+disagree. This layer decides meaning only: no colours, no sizes, no positions, no
+durations. If any appear above, that is a defect — they belong to Layers 6 and 8, and a
+value invented here gets adopted and then defended.</footer>`;
+</script></body></html>

@@ -17,6 +17,7 @@ tools/
     slide-review.html           Layer 3 — deck manifest review
     transcript-review.html      Layer 4 — narration timeline review
     slidechange-review.html     Layer 5 — window / slide-identity review
+    representation-review.html  Layer 5 — meanings, focus map, entities
   README.md                     this file
 ```
 
@@ -127,6 +128,7 @@ mpk --version
 | | `uniquefps` | Unique frames per second. **TGT-013** |
 | | `slidechanges` | What is on screen when — changes, slide identity, focus arrow. **Layer 5 step 1** |
 | **check** | `manifest` | Validate a Layer 3 manifest against the layer's rules |
+| | `representation` | Validate a Layer 5 representation. **Where VGR-07 gets enforced** |
 
 Every command that produces a reviewable artifact has a matching `check`:
 `mpk check manifest` for Layer 3, `mpk transcript check` for Layer 4.
@@ -319,7 +321,65 @@ produce a right one.
 A confirmed V017 slide change scored **17.00** while the opening fade — not a slide
 change — scored **160.15**. The threshold is a filter, never a verdict (OBS-035).
 
-### Audio — the two paths must stay separate### Audio — the two paths must stay separate
+### Layer 5 — what each element means
+
+```bash
+mpk review build res/workdir/v017.representation.json \
+    -t representation-review -o res/workdir/v017.representation.html
+
+mpk check representation res/workdir/v017.representation.json \
+    --manifest res/workdir/v017.manifest.json \
+    --windows res/workdir/v017.changes.json
+```
+
+Six checks, and the first is the one that matters:
+
+| Check | Fails when |
+|---|---|
+| **element coverage** | a manifest element appears zero or twice, or an element is invented |
+| citation | a `resolved` element carries no quote, segment and timestamp |
+| vocabulary | a term outside the fixed list (DEC-002) arrives undeclared |
+| focus tiling | the focus windows leave a gap or an overlap |
+| slide agreement | a focus window names a slide that is not on screen then |
+| arrow agreement | the focus map disagrees with the hand-placed arrow |
+
+**VGR-07 — nothing narrated may be silently dropped — was a rule with no
+enforcement.** A representation could omit half the deck and still look complete.
+This is the enforcement.
+
+**The arrow check reports, never corrects.** It covers 28.6% of deck-slide time on
+V017, so it can confirm a wrong answer but never produce a right one.
+
+### Audio — the two paths must stay separate### Layer 5 — what each element means
+
+```bash
+mpk review build res/workdir/v017.representation.json \
+    -t representation-review -o res/workdir/v017.representation.html
+
+mpk check representation res/workdir/v017.representation.json \
+    --manifest res/workdir/v017.manifest.json \
+    --windows res/workdir/v017.changes.json
+```
+
+Six checks, and the first is the one that matters:
+
+| Check | Fails when |
+|---|---|
+| **element coverage** | a manifest element appears zero or twice, or an element is invented |
+| citation | a `resolved` element carries no quote, segment and timestamp |
+| vocabulary | a term outside the fixed list (DEC-002) arrives undeclared |
+| focus tiling | the focus windows leave a gap or an overlap |
+| slide agreement | a focus window names a slide that is not on screen then |
+| arrow agreement | the focus map disagrees with the hand-placed arrow |
+
+**VGR-07 — nothing narrated may be silently dropped — was a rule with no
+enforcement.** A representation could omit half the deck and still look complete.
+This is the enforcement.
+
+**The arrow check reports, never corrects.** It covers 28.6% of deck-slide time on
+V017, so it can confirm a wrong answer but never produce a right one.
+
+### Audio — the two paths must stay separate
 
 ```bash
 mpk audio extract V017.mp4 -o V017-master.wav   # 48 kHz stereo — delivery
